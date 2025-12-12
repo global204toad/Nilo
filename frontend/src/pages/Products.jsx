@@ -1,0 +1,301 @@
+import { useEffect, useState } from 'react';
+import ProductCard from '../components/ProductCard';
+import { getProducts } from '../services/api';
+
+export default function Products() {
+  const [watches, setWatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    loadProducts();
+  }, []);
+  
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      // Fetch products filtered by men's watches
+      const products = await getProducts({ category: 'watch', gender: 'men' });
+      setWatches(products);
+    } catch (err) {
+      console.error('Failed to load products:', err);
+      setError(err.message);
+      // Fallback to empty array or default products if API fails
+      setWatches([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter: Only show men's watches for now
+  // Future: This can be expanded to filter by category (watch, perfume, accessories, etc.)
+  const filteredWatches = watches.filter(w => w.gender === 'men' && w.category === 'watch');
+  
+  // Split watches into groups
+  const firstFour = filteredWatches.slice(0, 4);
+  const secondTwo = filteredWatches.slice(4, 6);
+  const remaining = filteredWatches.slice(6);
+  const lastTwo = remaining.slice(-2);
+  const remainingBeforeLast = remaining.slice(0, -2);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F5F3EF] pt-24 pb-16 flex items-center justify-center">
+        <div className="text-2xl text-[#2D2D2D]">Loading products...</div>
+      </div>
+    );
+  }
+
+  if (error && filteredWatches.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#F5F3EF] pt-24 pb-16">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+          <div className="bg-white rounded-lg p-12 text-center">
+            <h2 className="text-2xl font-bold text-[#2D2D2D] mb-4">Failed to Load Products</h2>
+            <p className="text-[#6B7E6F] mb-6">{error}</p>
+            <button
+              onClick={loadProducts}
+              className="px-8 py-3 bg-[#2D2D2D] text-white rounded-lg hover:bg-[#4A5D4F] transition-colors duration-300 font-semibold"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      className="min-h-screen bg-[#F5F3EF] pt-24 pb-16"
+      style={{
+        backgroundImage: 'url(/images/product-bg.jpg.jpg)',
+        backgroundRepeat: 'repeat',
+        backgroundSize: 'auto',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+        
+        {/* Page Header */}
+        <div className="mb-12">
+          <h1 className="text-5xl md:text-6xl font-bold text-[#2D2D2D] mb-4">
+            Men's Watches Collection
+          </h1>
+          <p className="text-lg text-[#6B7E6F] max-w-2xl">
+            Explore our selection of premium men's watches crafted with style and precision.
+          </p>
+        </div>
+
+        {/* First Four Products - 4 Columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+          {firstFour.map((watch) => (
+            <ProductCard 
+              key={watch._id || watch.id}
+              product={{
+                id: watch._id || watch.id,
+                name: watch.name,
+                price: watch.price.toFixed(2),
+                type: watch.type,
+                flavorNotes: watch.flavorNotes,
+                image: watch.image
+              }}
+            />
+          ))}
+                </div>
+
+        {/* Second Two Products with Promotional Banner - 2 Products + 1 Banner */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+          {/* First Product */}
+          {secondTwo[0] && (
+            <ProductCard 
+              product={{
+                id: secondTwo[0]._id || secondTwo[0].id,
+                name: secondTwo[0].name,
+                price: `$${secondTwo[0].price.toFixed(2)}`,
+                type: secondTwo[0].type,
+                flavorNotes: secondTwo[0].flavorNotes,
+                image: secondTwo[0].image
+              }}
+            />
+          )}
+          
+          {/* Second Product */}
+          {secondTwo[1] && (
+            <ProductCard 
+              product={{
+                id: secondTwo[1]._id || secondTwo[1].id,
+                name: secondTwo[1].name,
+                price: `$${secondTwo[1].price.toFixed(2)}`,
+                type: secondTwo[1].type,
+                flavorNotes: secondTwo[1].flavorNotes,
+                image: secondTwo[1].image
+              }}
+            />
+          )}
+
+          {/* Promotional Banner - Spans 2 columns */}
+          <div className="relative overflow-visible cursor-pointer group lg:col-span-2">
+            {/* Content - Image Only, No Background */}
+            <div className="relative z-10 h-full flex items-center justify-center min-h-[200px] p-8">
+              {/* Rolex Watches Around Main Image - With Space from Main Image */}
+              {/* Watch 1 - Top Left */}
+              <img 
+                src="/images/rolx bg.png" 
+                alt="Rolex Watch"
+                className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
+                style={{ top: '8%', left: '8%', transform: 'rotate(-16deg)' }}
+              />
+              
+              {/* Watch 2 - Top Right */}
+              <img 
+                src="/images/rolx bg.png" 
+                alt="Rolex Watch"
+                className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
+                style={{ top: '8%', right: '8%', transform: 'rotate(16deg)' }}
+              />
+              
+              {/* Watch 3 - Bottom Left */}
+              <img 
+                src="/images/rolx bg.png" 
+                alt="Rolex Watch"
+                className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
+                style={{ bottom: '8%', left: '8%', transform: 'rotate(16deg)' }}
+              />
+              
+              {/* Watch 4 - Bottom Right */}
+              <img 
+                src="/images/rolx bg.png" 
+                alt="Rolex Watch"
+                className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
+                style={{ bottom: '8%', right: '8%', transform: 'rotate(-16deg)' }}
+              />
+
+              {/* Main Image */}
+              <div className="flex items-center justify-center">
+                <img 
+                  src="/images/black and white rolx.jpeg" 
+                  alt="NILO Gift Guide"
+                  className="object-contain relative z-10"
+                  style={{ maxWidth: '66%', maxHeight: '66%', width: 'auto', height: 'auto' }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Remaining Products Before Last Two - 4 Columns */}
+        {remainingBeforeLast.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            {remainingBeforeLast.map((watch) => (
+              <ProductCard 
+                key={watch._id || watch.id}
+                product={{
+                  id: watch._id || watch.id,
+                  name: watch.name,
+                  price: watch.price.toFixed(2),
+                  type: watch.type,
+                  flavorNotes: watch.flavorNotes,
+                  image: watch.image
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Last Two Products with Promotional Banner - 2 Products + 1 Banner */}
+        {lastTwo.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            {/* First Product */}
+            {lastTwo[0] && (
+              <ProductCard 
+                product={{
+                  id: lastTwo[0]._id || lastTwo[0].id,
+                  name: lastTwo[0].name,
+                  price: `$${lastTwo[0].price.toFixed(2)}`,
+                  type: lastTwo[0].type,
+                  flavorNotes: lastTwo[0].flavorNotes,
+                  image: lastTwo[0].image
+                }}
+              />
+            )}
+            
+            {/* Second Product */}
+            {lastTwo[1] && (
+              <ProductCard 
+                product={{
+                  id: lastTwo[1]._id || lastTwo[1].id,
+                  name: lastTwo[1].name,
+                  price: `$${lastTwo[1].price.toFixed(2)}`,
+                  type: lastTwo[1].type,
+                  flavorNotes: lastTwo[1].flavorNotes,
+                  image: lastTwo[1].image
+                }}
+              />
+            )}
+
+            {/* Promotional Banner - Spans 2 columns */}
+            <div className="relative overflow-visible cursor-pointer group lg:col-span-2">
+              {/* Content - Image Only, No Background */}
+              <div className="relative z-10 h-full flex items-center justify-center min-h-[200px] p-8">
+                {/* Rolex Watches Around Main Image - With Space from Main Image */}
+                {/* Watch 1 - Top Left */}
+                <img 
+                  src="/images/rolx bg.png" 
+                  alt="Rolex Watch"
+                  className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
+                  style={{ top: '8%', left: '8%', transform: 'rotate(-16deg)' }}
+                />
+                
+                {/* Watch 2 - Top Right */}
+                <img 
+                  src="/images/rolx bg.png" 
+                  alt="Rolex Watch"
+                  className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
+                  style={{ top: '8%', right: '8%', transform: 'rotate(16deg)' }}
+                />
+                
+                {/* Watch 3 - Bottom Left */}
+                <img 
+                  src="/images/rolx bg.png" 
+                  alt="Rolex Watch"
+                  className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
+                  style={{ bottom: '8%', left: '8%', transform: 'rotate(16deg)' }}
+                />
+                
+                {/* Watch 4 - Bottom Right */}
+                <img 
+                  src="/images/rolx bg.png" 
+                  alt="Rolex Watch"
+                  className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
+                  style={{ bottom: '8%', right: '8%', transform: 'rotate(-16deg)' }}
+                />
+
+                {/* Main Image */}
+                <div className="flex items-center justify-center">
+                  <img 
+                    src="/images/black and white rolx.jpeg" 
+                    alt="NILO Gift Guide"
+                    className="object-contain relative z-10"
+                    style={{ maxWidth: '66%', maxHeight: '66%', width: 'auto', height: 'auto' }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Load More */}
+        <div className="text-center mt-12">
+          <button className="px-8 py-3 bg-white text-[#2D2D2D] font-semibold rounded border-2 border-[#4A5D4F] hover:bg-[#4A5D4F] hover:text-white transition-all duration-300">
+            Load More Watches
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

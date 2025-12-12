@@ -1,0 +1,163 @@
+@import url('https://fonts.googleapis.com/css2?family=Cooper+Black&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Stumptown-inspired color palette for NILO Watches */
+  --cream: #F5F3EF;
+  --dark-green: #4A5D4F;
+  --light-green: #6B7E6F;
+  --accent-red: #C84B31;
+  --dark-brown: #2D2D2D;
+  --light-gray: #E8E6E3;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  background-color: var(--cream);
+  color: var(--dark-brown);
+  max-width: 100vw;
+}
+
+/* Prevent horizontal scrolling on mobile */
+* {
+  max-width: 100%;
+}
+
+img, video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Banner Image Desktop Max Height */
+@media (min-width: 1024px) {
+  .banner-image {
+    max-height: 450px !important;
+  }
+}
+
+/* Banner container with dark green background */
+.banner-container {
+  background-color: #1a2820;
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* Global Container */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* Mobile Container */
+@media (max-width: 767px) {
+  .container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+/* Desktop Typography */
+h1 {
+  font-size: 32px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 24px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+body {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+/* Mobile Typography */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 20px !important;
+    line-height: 1.3 !important;
+    font-weight: 600 !important;
+  }
+  
+  h2 {
+    font-size: 18px !important;
+    line-height: 1.3 !important;
+    font-weight: 600 !important;
+  }
+  
+  body {
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--light-gray);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--dark-green);
+  border-radius: 4px;
+  }
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--light-green);
+}
+
+/* Marquee Animation for Announcement Bar */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Clockwise Rotation Animation for Promotional Banner */
+@keyframes rotateClockwise {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-clockwise {
+  animation: rotateClockwise 20s linear infinite;
+}
