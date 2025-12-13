@@ -6,6 +6,7 @@ export default function Products() {
   const [watches, setWatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState(null);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -17,6 +18,7 @@ export default function Products() {
     try {
       setLoading(true);
       setError(null);
+      setDebugInfo(null);
       // Fetch products filtered by men's watches
       const products = await getProducts({ category: 'watch', gender: 'men' });
       setWatches(products);
@@ -25,10 +27,17 @@ export default function Products() {
       
       // Better error messages for different error types
       let errorMessage = 'Failed to load products. Please try again.';
+      let showDebugInfo = false;
       
       if (err.message) {
-        if (err.message.includes('Network') || err.message.includes('timeout') || err.message.includes('connection')) {
+        if (err.message.includes('Network') || err.message.includes('timeout') || err.message.includes('connection') || err.code === 'ERR_NETWORK') {
           errorMessage = 'Unable to connect to server. Please check your internet connection and try again.';
+          // Check if API URL is configured
+          const apiUrl = import.meta.env.VITE_API_URL;
+          if (!apiUrl || apiUrl.includes('localhost')) {
+            errorMessage += ' (Server configuration issue - please contact support)';
+            showDebugInfo = true;
+          }
         } else if (err.message.includes('404') || err.response?.status === 404) {
           errorMessage = 'Products endpoint not found. Please contact support if this issue persists.';
         } else if (err.message.includes('500') || err.response?.status === 500) {
@@ -38,7 +47,15 @@ export default function Products() {
         }
       }
       
+      // Store debug info for display
+      const debugData = showDebugInfo ? {
+        apiUrl: import.meta.env.VITE_API_URL || 'Not set (using localhost fallback)',
+        errorCode: err.code,
+        errorMessage: err.message
+      } : null;
+      
       setError(errorMessage);
+      setDebugInfo(debugData);
       // Fallback to empty array or default products if API fails
       setWatches([]);
     } finally {
@@ -91,6 +108,16 @@ export default function Products() {
             <p className="text-sm md:text-base text-[#6B7E6F] mb-6 leading-relaxed">
               {error}
             </p>
+            {debugInfo && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                <p className="font-semibold mb-1">Debug Info:</p>
+                <p>API URL: {debugInfo.apiUrl}</p>
+                {debugInfo.errorCode && <p>Error Code: {debugInfo.errorCode}</p>}
+                <p className="mt-2 text-yellow-700">
+                  ⚠️ The API URL is not configured. Please set VITE_API_URL in Vercel environment variables.
+                </p>
+              </div>
+            )}
             <button
               onClick={loadProducts}
               className="w-full px-8 py-3 bg-[#2D2D2D] text-white rounded-lg hover:bg-[#4A5D4F] transition-colors duration-300 font-semibold text-base"
@@ -98,9 +125,9 @@ export default function Products() {
             >
               Try Again
             </button>
-            {import.meta.env.DEV && (
+            {(import.meta.env.DEV || debugInfo) && (
               <p className="mt-4 text-xs text-gray-400">
-                API URL: {import.meta.env.VITE_API_URL || 'http://localhost:5000'}
+                API URL: {import.meta.env.VITE_API_URL || 'http://localhost:5000 (not configured)'}
               </p>
             )}
           </div>

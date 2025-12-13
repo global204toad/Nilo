@@ -14,6 +14,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Railway assigns PORT dynamically, so we use it directly
+
 // CORS Configuration
 const corsOptions = {
   origin: function (origin, callback) {
@@ -25,6 +27,8 @@ const corsOptions = {
       'http://localhost:3000',
       'http://localhost:5173', // Vite dev server
       /\.vercel\.app$/,  // Allow all Vercel preview deployments
+      /\.railway\.app$/,  // Allow all Railway deployments
+      /\.up\.railway\.app$/,  // Allow Railway preview deployments
     ];
     
     const isAllowed = allowedOrigins.some(allowed => {
@@ -116,7 +120,11 @@ const connectDB = async () => {
 connectDB();
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Railway requires binding to 0.0.0.0 and using the PORT env variable
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📦 MongoDB URI: ${process.env.MONGODB_URI ? '✅ Set' : '❌ Not set'}`);
+  console.log(`🔗 Server accessible at: http://0.0.0.0:${PORT}`);
 });
 

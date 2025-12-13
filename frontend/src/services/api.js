@@ -2,10 +2,15 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-// Log API URL in development for debugging
-if (import.meta.env.DEV) {
-  console.log('🔗 API Base URL:', API_BASE_URL);
-  console.log('🌍 Environment:', import.meta.env.MODE);
+// Log API URL for debugging (always log to help diagnose production issues)
+console.log('🔗 API Base URL:', API_BASE_URL);
+console.log('🌍 Environment:', import.meta.env.MODE);
+console.log('📦 VITE_API_URL set:', !!import.meta.env.VITE_API_URL);
+
+// Warn if using localhost in production
+if (!import.meta.env.VITE_API_URL && !import.meta.env.DEV) {
+  console.error('⚠️ WARNING: VITE_API_URL is not set! Using localhost fallback which will not work in production.');
+  console.error('⚠️ Please set VITE_API_URL in Vercel environment variables.');
 }
 
 const api = axios.create({
