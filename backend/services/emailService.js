@@ -30,8 +30,7 @@ const createTransporter = () => {
         pass: emailPass
       },
       tls: {
-        rejectUnauthorized: false,
-        ciphers: 'SSLv3'
+        rejectUnauthorized: false
       },
       // Add connection timeout
       connectionTimeout: 10000,
@@ -135,16 +134,17 @@ export const sendOTPEmail = async (email, otpCode) => {
     console.log('📧 Attempting to send OTP email to:', email);
     console.log('📧 From:', mailOptions.from);
     
-    // Verify transporter connection first
+    // Verify transporter connection first (optional - don't fail if it doesn't work)
     if (transporter.verify) {
       try {
         await transporter.verify();
         console.log('✅ SMTP connection verified');
       } catch (verifyError) {
-        console.error('❌ SMTP verification failed:');
-        console.error('   Error code:', verifyError.code);
-        console.error('   Error message:', verifyError.message);
-        throw new Error(`SMTP connection failed: ${verifyError.message}`);
+        console.warn('⚠️ SMTP verification failed (will still attempt to send):');
+        console.warn('   Error code:', verifyError.code);
+        console.warn('   Error message:', verifyError.message);
+        // Don't throw - some SMTP servers don't support verify but still work
+        // We'll try to send anyway
       }
     }
     
