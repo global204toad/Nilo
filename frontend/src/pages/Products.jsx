@@ -19,15 +19,22 @@ export default function Products() {
       setLoading(true);
       setError(null);
       setDebugInfo(null);
+      
+      // Log API configuration for debugging
+      const apiUrl = import.meta.env.VITE_API_URL || 'Not set (using localhost fallback)';
+      console.log('🔄 Loading products...');
+      console.log('🔗 VITE_API_URL:', apiUrl);
+      console.log('🌍 Environment:', import.meta.env.MODE);
+      
       // Fetch products filtered by men's watches
       const products = await getProducts({ category: 'watch', gender: 'men' });
+      console.log('✅ Products loaded successfully:', products?.length || 0, 'products');
       setWatches(products);
     } catch (err) {
-      console.error('Failed to load products:', err);
+      console.error('❌ Failed to load products:', err);
       
       // Better error messages for different error types
       let errorMessage = 'Failed to load products. Please try again.';
-      let showDebugInfo = false;
       
       if (err.message) {
         if (err.message.includes('Network') || err.message.includes('timeout') || err.message.includes('connection') || err.code === 'ERR_NETWORK') {
@@ -36,7 +43,6 @@ export default function Products() {
           const apiUrl = import.meta.env.VITE_API_URL;
           if (!apiUrl || apiUrl.includes('localhost')) {
             errorMessage += ' (Server configuration issue - please contact support)';
-            showDebugInfo = true;
           }
         } else if (err.message.includes('404') || err.response?.status === 404) {
           errorMessage = 'Products endpoint not found. Please contact support if this issue persists.';
@@ -47,12 +53,15 @@ export default function Products() {
         }
       }
       
-      // Store debug info for display
-      const debugData = showDebugInfo ? {
+      // Always store debug info for display when there's an error
+      const debugData = {
         apiUrl: import.meta.env.VITE_API_URL || 'Not set (using localhost fallback)',
         errorCode: err.code,
-        errorMessage: err.message
-      } : null;
+        errorMessage: err.message,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        fullUrl: err.config ? `${err.config.baseURL}${err.config.url}` : 'Unknown'
+      };
       
       setError(errorMessage);
       setDebugInfo(debugData);
@@ -109,13 +118,22 @@ export default function Products() {
               {error}
             </p>
             {debugInfo && (
-              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-                <p className="font-semibold mb-1">Debug Info:</p>
-                <p>API URL: {debugInfo.apiUrl}</p>
-                {debugInfo.errorCode && <p>Error Code: {debugInfo.errorCode}</p>}
-                <p className="mt-2 text-yellow-700">
-                  ⚠️ The API URL is not configured. Please set VITE_API_URL in Vercel environment variables.
-                </p>
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800 text-left">
+                <p className="font-semibold mb-2">Debug Info:</p>
+                <div className="space-y-1">
+                  <p><strong>API URL:</strong> {debugInfo.apiUrl}</p>
+                  {debugInfo.fullUrl && debugInfo.fullUrl !== 'Unknown' && (
+                    <p><strong>Full Request URL:</strong> {debugInfo.fullUrl}</p>
+                  )}
+                  {debugInfo.errorCode && <p><strong>Error Code:</strong> {debugInfo.errorCode}</p>}
+                  {debugInfo.status && <p><strong>HTTP Status:</strong> {debugInfo.status} {debugInfo.statusText}</p>}
+                  {debugInfo.errorMessage && <p><strong>Error Message:</strong> {debugInfo.errorMessage}</p>}
+                </div>
+                {(!debugInfo.apiUrl || debugInfo.apiUrl.includes('localhost') || debugInfo.apiUrl === 'Not set (using localhost fallback)') && (
+                  <p className="mt-2 text-yellow-700 font-semibold">
+                    ⚠️ The API URL is not configured correctly. Please set VITE_API_URL to: https://nilo-hxbc.onrender.com
+                  </p>
+                )}
               </div>
             )}
             <button
@@ -125,11 +143,9 @@ export default function Products() {
             >
               Try Again
             </button>
-            {(import.meta.env.DEV || debugInfo) && (
-              <p className="mt-4 text-xs text-gray-400">
-                API URL: {import.meta.env.VITE_API_URL || 'http://localhost:5000 (not configured)'}
-              </p>
-            )}
+            <p className="mt-4 text-xs text-gray-400">
+              API URL: {import.meta.env.VITE_API_URL || 'http://localhost:5000 (not configured)'}
+            </p>
           </div>
         </div>
       </div>
