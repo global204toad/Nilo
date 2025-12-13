@@ -66,11 +66,28 @@ app.get('/api/test-email', async (req, res) => {
     const testEmail = req.query.email || 'aliashrafosman777@gmail.com';
     const testOTP = '123456';
     
+    // Get password length for debugging (without showing actual password)
+    const passLength = process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0;
+    const passHasSpaces = process.env.EMAIL_PASS ? /\s/.test(process.env.EMAIL_PASS) : false;
+    
     console.log('🧪 Testing email configuration...');
-    console.log('   EMAIL_HOST:', process.env.EMAIL_HOST);
-    console.log('   EMAIL_PORT:', process.env.EMAIL_PORT);
-    console.log('   EMAIL_USER:', process.env.EMAIL_USER);
-    console.log('   EMAIL_PASS:', process.env.EMAIL_PASS ? '***' : 'NOT SET');
+    console.log('   EMAIL_HOST:', process.env.EMAIL_HOST || 'NOT SET');
+    console.log('   EMAIL_PORT:', process.env.EMAIL_PORT || 'NOT SET (default: 587)');
+    console.log('   EMAIL_USER:', process.env.EMAIL_USER || 'NOT SET');
+    console.log('   EMAIL_PASS:', process.env.EMAIL_PASS ? `SET (length: ${passLength}, has spaces: ${passHasSpaces})` : 'NOT SET');
+    
+    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return res.status(500).json({
+        success: false,
+        message: 'Email configuration incomplete',
+        config: {
+          EMAIL_HOST: !!process.env.EMAIL_HOST,
+          EMAIL_PORT: !!process.env.EMAIL_PORT,
+          EMAIL_USER: !!process.env.EMAIL_USER,
+          EMAIL_PASS: !!process.env.EMAIL_PASS
+        }
+      });
+    }
     
     await sendOTPEmail(testEmail, testOTP);
     
@@ -79,20 +96,26 @@ app.get('/api/test-email', async (req, res) => {
       message: `Test email sent to ${testEmail}. Please check your inbox and spam folder.`,
       config: {
         host: process.env.EMAIL_HOST,
-        port: process.env.EMAIL_PORT,
+        port: process.env.EMAIL_PORT || 587,
         user: process.env.EMAIL_USER,
-        passSet: !!process.env.EMAIL_PASS
+        passLength: passLength,
+        passHasSpaces: passHasSpaces
       }
     });
   } catch (error) {
+    console.error('❌ Test email failed:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to send test email',
       error: error.message,
+      errorCode: error.code,
+      responseCode: error.responseCode,
       details: {
         code: error.code,
         command: error.command,
-        response: error.response
+        response: error.response,
+        responseCode: error.responseCode,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       }
     });
   }
