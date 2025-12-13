@@ -21,10 +21,11 @@ export default function Products() {
       setDebugInfo(null);
       
       // Log API configuration for debugging
-      const apiUrl = import.meta.env.VITE_API_URL || 'Not set (using localhost fallback)';
+      // SAFE: Guard against undefined env
+      const apiUrl = import.meta.env?.VITE_API_URL || 'Not set (using localhost fallback)';
       console.log('🔄 Loading products...');
       console.log('🔗 VITE_API_URL:', apiUrl);
-      console.log('🌍 Environment:', import.meta.env.MODE);
+      console.log('🌍 Environment:', import.meta.env?.MODE || 'unknown');
       
       // Fetch products filtered by men's watches
       const products = await getProducts({ category: 'watch', gender: 'men' });
@@ -40,8 +41,9 @@ export default function Products() {
         if (err.message.includes('Network') || err.message.includes('timeout') || err.message.includes('connection') || err.code === 'ERR_NETWORK') {
           errorMessage = 'Unable to connect to server. Please check your internet connection and try again.';
           // Check if API URL is configured
-          const apiUrl = import.meta.env.VITE_API_URL;
-          if (!apiUrl || apiUrl.includes('localhost')) {
+          // SAFE: Guard against undefined env
+          const apiUrl = import.meta.env?.VITE_API_URL;
+          if (!apiUrl || (typeof apiUrl === 'string' && apiUrl.includes('localhost'))) {
             errorMessage += ' (Server configuration issue - please contact support)';
           }
         } else if (err.message.includes('404') || err.response?.status === 404) {
@@ -54,13 +56,14 @@ export default function Products() {
       }
       
       // Always store debug info for display when there's an error
+      // SAFE: Guard against undefined values
       const debugData = {
-        apiUrl: import.meta.env.VITE_API_URL || 'Not set (using localhost fallback)',
-        errorCode: err.code,
-        errorMessage: err.message,
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        fullUrl: err.config ? `${err.config.baseURL}${err.config.url}` : 'Unknown'
+        apiUrl: import.meta.env?.VITE_API_URL || 'Not set (using localhost fallback)',
+        errorCode: err?.code,
+        errorMessage: err?.message || 'Unknown error',
+        status: err?.response?.status,
+        statusText: err?.response?.statusText,
+        fullUrl: err?.config ? `${err.config.baseURL || ''}${err.config.url || ''}` : 'Unknown'
       };
       
       setError(errorMessage);
@@ -144,7 +147,7 @@ export default function Products() {
               Try Again
             </button>
             <p className="mt-4 text-xs text-gray-400">
-              API URL: {import.meta.env.VITE_API_URL || 'http://localhost:5000 (not configured)'}
+              API URL: {import.meta.env?.VITE_API_URL || 'http://localhost:5000 (not configured)'}
             </p>
           </div>
         </div>

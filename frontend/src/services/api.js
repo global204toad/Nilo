@@ -1,31 +1,37 @@
 import axios from 'axios';
 
-// Get API URL from environment variable
-let API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// SAFE: Get API URL from environment variable with defensive checks
+// This prevents white screen crashes if env is undefined
+const RAW_API_URL = import.meta.env?.VITE_API_URL;
 
-// Normalize API URL: remove trailing slash and ensure it doesn't end with /api
+// Normalize and validate API URL
 // The base URL should NOT include /api since we append /api/products, /api/auth, etc.
-API_BASE_URL = API_BASE_URL.trim().replace(/\/+$/, ''); // Remove trailing slashes
-
-// Warn if URL ends with /api (this would cause double /api/api/products)
-if (API_BASE_URL.endsWith('/api')) {
-  console.warn('⚠️ WARNING: VITE_API_URL ends with /api. This will cause double /api in requests.');
-  console.warn('⚠️ Current URL:', API_BASE_URL);
-  console.warn('⚠️ Expected format: https://nilo-hxbc.onrender.com (without /api)');
-  console.warn('⚠️ The /api prefix is automatically added to all requests.');
-  // Auto-fix: remove /api suffix
-  API_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
-  console.warn('⚠️ Auto-corrected to:', API_BASE_URL);
-}
+const API_BASE_URL = (() => {
+  // If no env var, use localhost for development
+  if (!RAW_API_URL || typeof RAW_API_URL !== 'string' || RAW_API_URL.trim() === '') {
+    return 'http://localhost:5000';
+  }
+  
+  // Normalize: remove trailing slashes and /api suffix
+  let url = RAW_API_URL.trim().replace(/\/+$/, ''); // Remove trailing slashes
+  
+  // Remove /api suffix if present (prevents double /api/api/products)
+  if (url.endsWith('/api')) {
+    console.warn('⚠️ WARNING: VITE_API_URL ends with /api. Auto-removing to prevent double /api in requests.');
+    url = url.replace(/\/api$/, '');
+  }
+  
+  return url;
+})();
 
 // Log API URL for debugging (always log to help diagnose production issues)
-console.log('🔗 API Base URL:', API_BASE_URL);
-console.log('🌍 Environment:', import.meta.env.MODE);
-console.log('📦 VITE_API_URL set:', !!import.meta.env.VITE_API_URL);
-console.log('📦 VITE_API_URL value:', import.meta.env.VITE_API_URL || 'Not set (using localhost fallback)');
+console.log('✅ API BASE URL:', API_BASE_URL);
+console.log('🌍 Environment:', import.meta.env?.MODE || 'unknown');
+console.log('📦 VITE_API_URL set:', !!RAW_API_URL);
+console.log('📦 VITE_API_URL value:', RAW_API_URL || 'Not set (using localhost fallback)');
 
 // Warn if using localhost in production
-if (!import.meta.env.VITE_API_URL && !import.meta.env.DEV) {
+if (!RAW_API_URL && import.meta.env?.MODE === 'production') {
   console.error('⚠️ WARNING: VITE_API_URL is not set! Using localhost fallback which will not work in production.');
   console.error('⚠️ Please set VITE_API_URL in Vercel environment variables.');
   console.error('⚠️ Expected value: https://nilo-hxbc.onrender.com');
@@ -43,8 +49,10 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Always log in production for debugging API issues
-    const fullUrl = `${config.baseURL}${config.url}`;
-    console.log('📤 API Request:', config.method?.toUpperCase(), fullUrl);
+    // SAFE: Guard against undefined baseURL
+    const baseURL = config.baseURL || API_BASE_URL || '';
+    const fullUrl = `${baseURL}${config.url || ''}`;
+    console.log('📤 API Request:', config.method?.toUpperCase() || 'GET', fullUrl);
     if (config.params && Object.keys(config.params).length > 0) {
       console.log('📋 Request params:', config.params);
     }
@@ -60,8 +68,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     // Always log in production for debugging API issues
-    const fullUrl = `${response.config.baseURL}${response.config.url}`;
-    console.log('📥 API Response:', response.status, fullUrl);
+    // SAFE: Guard against undefined config
+    const baseURL = response.config?.baseURL || API_BASE_URL || '';
+    const url = response.config?.url || '';
+    const fullUrl = `${baseURL}${url}`;
+    console.log('📥 API Response:', response.status || 'unknown', fullUrl);
     return response;
   },
   (error) => {
@@ -175,23 +186,27 @@ export const submitContactForm = async (formData) => {
 // Product API functions
 export const getProducts = async (params = {}) => {
   try {
-    // Build full URL for debugging
-    const fullUrl = `${API_BASE_URL}/api/products${Object.keys(params).length > 0 ? '?' + new URLSearchParams(params).toString() : ''}`;
+    // SAFE: Build full URL for debugging with defensive checks
+    const baseUrl = API_BASE_URL || 'http://localhost:5000';
+    const queryString = Object.keys(params).length > 0 ? '?' + new URLSearchParams(params).toString() : '';
+    const fullUrl = `${baseUrl}/api/products${queryString}`;
+    
     console.log('🔍 Fetching products from:', fullUrl);
-    console.log('📋 API Base URL:', API_BASE_URL);
-    console.log('🔧 VITE_API_URL:', import.meta.env.VITE_API_URL || 'Not set (using fallback)');
+    console.log('📋 API Base URL:', baseUrl);
+    console.log('🔧 VITE_API_URL:', RAW_API_URL || 'Not set (using fallback)');
     
     const response = await api.get('/api/products', { params });
-    console.log('✅ Products fetched successfully:', response.data?.length || 0, 'products');
-    return response.data;
+    console.log('✅ Products fetched successfully:', response?.data?.length || 0, 'products');
+    return response?.data || [];
   } catch (error) {
     console.error('❌ Get Products Error:', error);
-    console.error('🔍 Failed URL:', `${API_BASE_URL}/api/products`);
+    const baseUrl = API_BASE_URL || 'http://localhost:5000';
+    console.error('🔍 Failed URL:', `${baseUrl}/api/products`);
     console.error('📋 Error details:', {
-      message: error.message,
-      code: error.code,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
+      message: error?.message || 'Unknown error',
+      code: error?.code,
+      status: error?.response?.status,
+      statusText: error?.response?.statusText,
     });
     throw error;
   }
