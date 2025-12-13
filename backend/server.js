@@ -29,6 +29,7 @@ const corsOptions = {
       /\.vercel\.app$/,  // Allow all Vercel preview deployments
       /\.railway\.app$/,  // Allow all Railway deployments
       /\.up\.railway\.app$/,  // Allow Railway preview deployments
+      /\.onrender\.com$/,  // Allow all Render deployments
     ];
     
     const isAllowed = allowedOrigins.some(allowed => {
@@ -120,7 +121,7 @@ const connectDB = async () => {
 connectDB();
 
 // Start server
-// Railway requires binding to 0.0.0.0 and using the PORT env variable
+// Render/Railway require binding to 0.0.0.0 and using the PORT env variable (set automatically)
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
