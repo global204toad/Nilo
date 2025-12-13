@@ -7,23 +7,36 @@ dotenv.config();
 const createTransporter = () => {
   // Use SMTP configuration from .env
   if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    // IMPORTANT: Gmail App Passwords often have spaces - remove them
+    const emailPass = String(process.env.EMAIL_PASS).trim().replace(/\s+/g, '');
+    const emailUser = String(process.env.EMAIL_USER).trim();
+    const emailHost = String(process.env.EMAIL_HOST).trim();
+    const emailPort = parseInt(process.env.EMAIL_PORT) || 587;
+    
     console.log('📧 Email transporter configured:', {
-      host: process.env.EMAIL_HOST,
-      port: parseInt(process.env.EMAIL_PORT) || 587,
-      user: process.env.EMAIL_USER
+      host: emailHost,
+      port: emailPort,
+      user: emailUser,
+      passSet: !!emailPass,
+      passLength: emailPass.length
     });
     
     return nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: parseInt(process.env.EMAIL_PORT) || 587,
-      secure: false, // true for 465, false for other ports
+      host: emailHost,
+      port: emailPort,
+      secure: emailPort === 465, // true for 465, false for other ports
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: emailUser,
+        pass: emailPass
       },
       tls: {
-        rejectUnauthorized: false
-      }
+        rejectUnauthorized: false,
+        ciphers: 'SSLv3'
+      },
+      // Add connection timeout
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000
     });
   }
 
@@ -121,6 +134,20 @@ export const sendOTPEmail = async (email, otpCode) => {
   try {
     console.log('📧 Attempting to send OTP email to:', email);
     console.log('📧 From:', mailOptions.from);
+    
+    // Verify transporter connection first
+    if (transporter.verify) {
+      try {
+        await transporter.verify();
+        console.log('✅ SMTP connection verified');
+      } catch (verifyError) {
+        console.error('❌ SMTP verification failed:');
+        console.error('   Error code:', verifyError.code);
+        console.error('   Error message:', verifyError.message);
+        throw new Error(`SMTP connection failed: ${verifyError.message}`);
+      }
+    }
+    
     const info = await transporter.sendMail(mailOptions);
     console.log('✅ OTP Email sent successfully!');
     console.log('   Message ID:', info.messageId);
@@ -130,8 +157,27 @@ export const sendOTPEmail = async (email, otpCode) => {
     console.error('❌ Error sending OTP email:');
     console.error('   Error code:', error.code);
     console.error('   Error message:', error.message);
-    console.error('   Full error:', error);
-    throw error;
+    console.error('   Command:', error.command);
+    console.error('   Response:', error.response);
+    console.error('   ResponseCode:', error.responseCode);
+    
+    // Provide helpful error messages
+    let userFriendlyMessage = 'Failed to send verification code. Please try again.';
+    if (error.code === 'EAUTH') {
+      userFriendlyMessage = 'Email authentication failed. Please check your email credentials.';
+    } else if (error.code === 'ECONNECTION' || error.code === 'ETIMEDOUT') {
+      userFriendlyMessage = 'Could not connect to email server. Please try again later.';
+    } else if (error.responseCode === 535) {
+      userFriendlyMessage = 'Invalid email credentials. Please check your email password.';
+    } else if (error.responseCode === 550) {
+      userFriendlyMessage = 'Email address not found or access denied.';
+    }
+    
+    const enhancedError = new Error(userFriendlyMessage);
+    enhancedError.originalError = error;
+    enhancedError.code = error.code;
+    enhancedError.responseCode = error.responseCode;
+    throw enhancedError;
   }
 };
 
