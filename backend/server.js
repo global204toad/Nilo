@@ -9,7 +9,10 @@ import productRoutes from './routes/products.js';
 import cartRoutes from './routes/cart.js';
 import checkoutRoutes from './routes/checkout.js';
 
-dotenv.config();
+// Only load .env in development (Render uses environment variables)
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -126,6 +129,12 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📦 MongoDB URI: ${process.env.MONGODB_URI ? '✅ Set' : '❌ Not set'}`);
+  console.log(`📧 Email Config: ${process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS ? '✅ Configured' : '❌ Not configured'}`);
+  if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    console.log(`   Host: ${process.env.EMAIL_HOST}`);
+    console.log(`   Port: ${process.env.EMAIL_PORT || 587}`);
+    console.log(`   User: ${process.env.EMAIL_USER}`);
+  }
   console.log(`🔗 Server accessible at: http://0.0.0.0:${PORT}`);
 });
 

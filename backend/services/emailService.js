@@ -1,7 +1,10 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
-dotenv.config();
+// Only load .env in development (Render uses environment variables)
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 // Create transporter
 const createTransporter = () => {
@@ -54,6 +57,18 @@ const createTransporter = () => {
 };
 
 const transporter = createTransporter();
+
+// Verify email transporter on module load (non-blocking)
+if (transporter && transporter.verify) {
+  transporter.verify()
+    .then(() => {
+      console.log('✅ Email transporter is ready and verified');
+    })
+    .catch((err) => {
+      console.warn('⚠️ Email transporter verification failed (will still attempt to send):', err.message);
+      console.warn('   This is normal if SMTP server doesn\'t support verify, or credentials need checking');
+    });
+}
 
 export const sendOTPEmail = async (email, otpCode) => {
   // Ensure EMAIL_USER is full email address
