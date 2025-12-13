@@ -2,12 +2,62 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+// Log API URL in development for debugging
+if (import.meta.env.DEV) {
+  console.log('🔗 API Base URL:', API_BASE_URL);
+  console.log('🌍 Environment:', import.meta.env.MODE);
+}
+
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000, // 15 second timeout for mobile networks
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Add request interceptor for debugging
+api.interceptors.request.use(
+  (config) => {
+    if (import.meta.env.DEV) {
+      console.log('📤 API Request:', config.method?.toUpperCase(), config.url);
+    }
+    return config;
+  },
+  (error) => {
+    console.error('❌ API Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for error handling
+api.interceptors.response.use(
+  (response) => {
+    if (import.meta.env.DEV) {
+      console.log('📥 API Response:', response.status, response.config.url);
+    }
+    return response;
+  },
+  (error) => {
+    // Enhanced error handling
+    if (error.code === 'ECONNABORTED') {
+      console.error('⏱️ API Request Timeout');
+      error.message = 'Request timeout. Please check your connection and try again.';
+    } else if (!error.response) {
+      // Network error (no response from server)
+      console.error('🌐 Network Error:', error.message);
+      if (error.message.includes('Network Error') || error.code === 'ERR_NETWORK') {
+        error.message = 'Network error. Please check your internet connection and try again.';
+      } else if (error.code === 'ERR_INTERNET_DISCONNECTED') {
+        error.message = 'No internet connection. Please check your network settings.';
+      }
+    } else {
+      // Server responded with error status
+      console.error('❌ API Error Response:', error.response.status, error.response.data);
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const hello = async () => {
   try {

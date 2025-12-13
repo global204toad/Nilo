@@ -22,7 +22,23 @@ export default function Products() {
       setWatches(products);
     } catch (err) {
       console.error('Failed to load products:', err);
-      setError(err.message);
+      
+      // Better error messages for different error types
+      let errorMessage = 'Failed to load products. Please try again.';
+      
+      if (err.message) {
+        if (err.message.includes('Network') || err.message.includes('timeout') || err.message.includes('connection')) {
+          errorMessage = 'Unable to connect to server. Please check your internet connection and try again.';
+        } else if (err.message.includes('404') || err.response?.status === 404) {
+          errorMessage = 'Products endpoint not found. Please contact support if this issue persists.';
+        } else if (err.message.includes('500') || err.response?.status === 500) {
+          errorMessage = 'Server error. Please try again in a few moments.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
       // Fallback to empty array or default products if API fails
       setWatches([]);
     } finally {
@@ -51,17 +67,42 @@ export default function Products() {
 
   if (error && filteredWatches.length === 0) {
     return (
-      <div className="min-h-screen bg-[#F5F3EF] pt-24 pb-16">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="bg-white rounded-lg p-12 text-center">
-            <h2 className="text-2xl font-bold text-[#2D2D2D] mb-4">Failed to Load Products</h2>
-            <p className="text-[#6B7E6F] mb-6">{error}</p>
+      <div className="min-h-screen bg-[#F5F3EF] pt-24 pb-16 flex items-center justify-center px-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-lg p-8 md:p-12 text-center shadow-lg">
+            <div className="mb-6">
+              <svg 
+                className="mx-auto h-16 w-16 text-[#6B7E6F]" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" 
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl md:text-2xl font-bold text-[#2D2D2D] mb-4">
+              Failed to Load Products
+            </h2>
+            <p className="text-sm md:text-base text-[#6B7E6F] mb-6 leading-relaxed">
+              {error}
+            </p>
             <button
               onClick={loadProducts}
-              className="px-8 py-3 bg-[#2D2D2D] text-white rounded-lg hover:bg-[#4A5D4F] transition-colors duration-300 font-semibold"
+              className="w-full px-8 py-3 bg-[#2D2D2D] text-white rounded-lg hover:bg-[#4A5D4F] transition-colors duration-300 font-semibold text-base"
+              style={{ minHeight: '44px' }}
             >
               Try Again
             </button>
+            {import.meta.env.DEV && (
+              <p className="mt-4 text-xs text-gray-400">
+                API URL: {import.meta.env.VITE_API_URL || 'http://localhost:5000'}
+              </p>
+            )}
           </div>
         </div>
       </div>

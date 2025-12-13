@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 export default function Home() {
   return (
     <div>
-      {/* Announcement Bar - Scrolling */}
-      <div className="bg-gradient-to-r from-[#1a2820] via-[#243830] to-[#1a2820] text-white py-3 overflow-hidden relative">
+      {/* Announcement Bar - Scrolling (Hidden on Mobile) */}
+      <div className="hidden md:block bg-gradient-to-r from-[#1a2820] via-[#243830] to-[#1a2820] text-white py-3 overflow-hidden relative">
         <div className="flex whitespace-nowrap" style={{ animation: 'marquee 5s linear infinite' }}>
           <span className="inline-block px-8 text-sm md:text-base font-medium">
             🎁 Free Shipping Over 2000 | ⭐ New Limited Edition | 💎 Save 20% on Every Product We Have
@@ -19,7 +19,7 @@ export default function Home() {
       </div>
 
       {/* Hero Section with Banner Image */}
-      <section className="relative h-screen overflow-hidden">
+      <section className="relative h-[500px] md:h-screen overflow-hidden">
         {/* Dark green background layer (behind image) */}
         <div 
           className="absolute inset-0" 
@@ -29,16 +29,12 @@ export default function Home() {
         ></div>
         
         {/* Banner image - with dimension/padding for layered look */}
-        <div className="absolute inset-0 flex items-center justify-center p-4 md:p-8">
+        <div className="absolute inset-0 flex items-center justify-center p-3 md:p-8">
           <img 
             src="/images/Red And Pink Retro Sale Site Banner.jpeg"
             alt="NILO Banner"
-            className="rounded-lg shadow-2xl"
-            style={{ 
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover'
-            }}
+            className="rounded-lg shadow-2xl w-full h-full object-contain md:object-cover"
+            loading="eager"
           />
         </div>
       </section>
@@ -139,13 +135,14 @@ export default function Home() {
       <section className="py-6 md:py-16 bg-[#faedcd]">
         <div className="max-w-[1280px] mx-auto px-4 md:px-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 items-center">
-            <div className="w-full h-[250px] md:h-[700px] overflow-hidden cursor-pointer group relative rounded-lg">
+            <div className="w-full h-[400px] md:h-[700px] overflow-hidden cursor-pointer group relative rounded-lg bg-[#E8E6E3]">
               <video 
                 autoPlay 
                 loop 
                 muted 
                 playsInline
-                className="w-full h-full object-cover md:object-contain transition-transform duration-700 group-hover:scale-[1.02]"
+                className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-[1.02]"
+                preload="auto"
               >
                 <source src="/images/Brown Retro Classy Watch.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
