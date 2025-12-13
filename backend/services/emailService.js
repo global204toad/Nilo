@@ -33,12 +33,17 @@ const createTransporter = () => {
         pass: emailPass
       },
       tls: {
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
+        minVersion: 'TLSv1.2'
       },
-      // Add connection timeout
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000
+      // Increased timeouts for Render free tier (which can be slow)
+      connectionTimeout: 60000, // 60 seconds
+      greetingTimeout: 30000, // 30 seconds
+      socketTimeout: 60000, // 60 seconds
+      // Add pool connection for better reliability
+      pool: true,
+      maxConnections: 1,
+      maxMessages: 3
     });
   }
 
@@ -145,55 +150,76 @@ export const sendOTPEmail = async (email, otpCode) => {
     `
   };
 
-  try {
-    console.log('📧 Attempting to send OTP email to:', email);
-    console.log('📧 From:', mailOptions.from);
-    
-    // Verify transporter connection first (optional - don't fail if it doesn't work)
-    if (transporter.verify) {
-      try {
-        await transporter.verify();
-        console.log('✅ SMTP connection verified');
-      } catch (verifyError) {
-        console.warn('⚠️ SMTP verification failed (will still attempt to send):');
-        console.warn('   Error code:', verifyError.code);
-        console.warn('   Error message:', verifyError.message);
-        // Don't throw - some SMTP servers don't support verify but still work
-        // We'll try to send anyway
+  // Retry logic for Render free tier (which can have connection issues)
+  const maxRetries = 3;
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`📧 Attempting to send OTP email to: ${email} (Attempt ${attempt}/${maxRetries})`);
+      console.log('📧 From:', mailOptions.from);
+      
+      // Skip verification on retries to save time
+      if (attempt === 1 && transporter.verify) {
+        try {
+          await transporter.verify();
+          console.log('✅ SMTP connection verified');
+        } catch (verifyError) {
+          console.warn('⚠️ SMTP verification failed (will still attempt to send):');
+          console.warn('   Error code:', verifyError.code);
+          console.warn('   Error message:', verifyError.message);
+        }
       }
+      
+      const info = await transporter.sendMail(mailOptions);
+      console.log('✅ OTP Email sent successfully!');
+      console.log('   Message ID:', info.messageId);
+      console.log('   Response:', info.response);
+      return info;
+    } catch (error) {
+      lastError = error;
+      console.error(`❌ Attempt ${attempt} failed:`);
+      console.error('   Error code:', error.code);
+      console.error('   Error message:', error.message);
+      
+      // If it's a timeout and we have retries left, wait and retry
+      if ((error.code === 'ETIMEDOUT' || error.code === 'ECONNECTION') && attempt < maxRetries) {
+        const waitTime = attempt * 2000; // 2s, 4s, 6s
+        console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+      
+      // If not a retryable error or out of retries, break
+      break;
     }
-    
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ OTP Email sent successfully!');
-    console.log('   Message ID:', info.messageId);
-    console.log('   Response:', info.response);
-    return info;
-  } catch (error) {
-    console.error('❌ Error sending OTP email:');
-    console.error('   Error code:', error.code);
-    console.error('   Error message:', error.message);
-    console.error('   Command:', error.command);
-    console.error('   Response:', error.response);
-    console.error('   ResponseCode:', error.responseCode);
-    
-    // Provide helpful error messages
-    let userFriendlyMessage = 'Failed to send verification code. Please try again.';
-    if (error.code === 'EAUTH') {
-      userFriendlyMessage = 'Email authentication failed. Please check your email credentials.';
-    } else if (error.code === 'ECONNECTION' || error.code === 'ETIMEDOUT') {
-      userFriendlyMessage = 'Could not connect to email server. Please try again later.';
-    } else if (error.responseCode === 535) {
-      userFriendlyMessage = 'Invalid email credentials. Please check your email password.';
-    } else if (error.responseCode === 550) {
-      userFriendlyMessage = 'Email address not found or access denied.';
-    }
-    
-    const enhancedError = new Error(userFriendlyMessage);
-    enhancedError.originalError = error;
-    enhancedError.code = error.code;
-    enhancedError.responseCode = error.responseCode;
-    throw enhancedError;
   }
+  
+  // If we get here, all retries failed
+  console.error('❌ All retry attempts failed. Final error:');
+  console.error('   Error code:', lastError.code);
+  console.error('   Error message:', lastError.message);
+  console.error('   Command:', lastError.command);
+  console.error('   Response:', lastError.response);
+  console.error('   ResponseCode:', lastError.responseCode);
+  
+  // Provide helpful error messages
+  let userFriendlyMessage = 'Failed to send verification code. Please try again.';
+  if (lastError.code === 'EAUTH') {
+    userFriendlyMessage = 'Email authentication failed. Please check your email credentials.';
+  } else if (lastError.code === 'ECONNECTION' || lastError.code === 'ETIMEDOUT') {
+    userFriendlyMessage = 'Could not connect to email server. This may be due to network restrictions on Render free tier. Please try again in a few moments.';
+  } else if (lastError.responseCode === 535) {
+    userFriendlyMessage = 'Invalid email credentials. Please check your email password.';
+  } else if (lastError.responseCode === 550) {
+    userFriendlyMessage = 'Email address not found or access denied.';
+  }
+  
+  const enhancedError = new Error(userFriendlyMessage);
+  enhancedError.originalError = lastError;
+  enhancedError.code = lastError.code;
+  enhancedError.responseCode = lastError.responseCode;
+  throw enhancedError;
 };
 
 export const sendContactEmail = async ({ customerName, customerEmail, subject, message }) => {
