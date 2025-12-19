@@ -14,41 +14,58 @@ const USE_SMTP = !USE_RESEND && process.env.EMAIL_HOST && process.env.EMAIL_USER
 const createTransporter = () => {
   // Use SMTP configuration from .env
   if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-    // IMPORTANT: Gmail App Passwords often have spaces - remove them
-    const emailPass = String(process.env.EMAIL_PASS).trim().replace(/\s+/g, '');
+    // IMPORTANT: Gmail App Passwords often have spaces - remove them completely
+    const rawPass = String(process.env.EMAIL_PASS);
+    const emailPass = rawPass.trim().replace(/\s+/g, '');
     const emailUser = String(process.env.EMAIL_USER).trim();
     const emailHost = String(process.env.EMAIL_HOST).trim();
     const emailPort = parseInt(process.env.EMAIL_PORT) || 587;
     
+    // Log configuration (without exposing password)
     console.log('📧 Email transporter configured:', {
       host: emailHost,
       port: emailPort,
       user: emailUser,
       passSet: !!emailPass,
-      passLength: emailPass.length
+      passLength: emailPass.length,
+      hadSpaces: rawPass !== emailPass
     });
     
-    return nodemailer.createTransport({
+    // Validate password length (Gmail App Passwords are 16 characters)
+    if (emailPass.length !== 16) {
+      console.warn('⚠️ WARNING: Email password length is', emailPass.length, 'characters. Gmail App Passwords should be 16 characters.');
+    }
+    
+    // Configure transport based on port
+    const isSecure = emailPort === 465;
+    const transportConfig = {
       host: emailHost,
       port: emailPort,
-      secure: emailPort === 465, // true for 465, false for other ports
+      secure: isSecure, // true for 465 (SSL), false for 587 (TLS)
       auth: {
         user: emailUser,
         pass: emailPass
       },
-      tls: {
+      // Significantly increased timeouts for Railway network restrictions
+      connectionTimeout: 120000, // 120 seconds (2 minutes)
+      greetingTimeout: 60000, // 60 seconds
+      socketTimeout: 120000, // 120 seconds (2 minutes)
+      // Disable pool for Railway (can cause connection issues)
+      pool: false,
+      // Add debug for troubleshooting
+      debug: false,
+      logger: false
+    };
+
+    // TLS configuration only for non-SSL ports (587)
+    if (!isSecure) {
+      transportConfig.tls = {
         rejectUnauthorized: false,
         minVersion: 'TLSv1.2'
-      },
-      // Increased timeouts for Render free tier (which can be slow)
-      connectionTimeout: 60000, // 60 seconds
-      greetingTimeout: 30000, // 30 seconds
-      socketTimeout: 60000, // 60 seconds
-      // Add pool connection for better reliability
-      pool: true,
-      maxConnections: 1,
-      maxMessages: 3
-    });
+      };
+    }
+
+    return nodemailer.createTransport(transportConfig);
   }
 
   // Fallback: Development - Console only (no actual email sent)
@@ -67,17 +84,9 @@ const createTransporter = () => {
 
 const transporter = createTransporter();
 
-// Verify email transporter on module load (non-blocking)
-if (transporter && transporter.verify) {
-  transporter.verify()
-    .then(() => {
-      console.log('✅ Email transporter is ready and verified');
-    })
-    .catch((err) => {
-      console.warn('⚠️ Email transporter verification failed (will still attempt to send):', err.message);
-      console.warn('   This is normal if SMTP server doesn\'t support verify, or credentials need checking');
-    });
-}
+// Skip verification on module load for Railway (causes timeout issues)
+// Verification will be attempted on first email send instead
+console.log('📧 Email transporter created (verification skipped on startup to avoid Railway timeouts)');
 
 export const sendOTPEmail = async (email, otpCode) => {
   // Ensure EMAIL_USER is full email address
@@ -163,17 +172,8 @@ export const sendOTPEmail = async (email, otpCode) => {
       console.log(`📧 Attempting to send OTP email to: ${email} (Attempt ${attempt}/${maxRetries})`);
       console.log('📧 From:', mailOptions.from);
       
-      // Skip verification on retries to save time
-      if (attempt === 1 && transporter.verify) {
-        try {
-          await transporter.verify();
-          console.log('✅ SMTP connection verified');
-        } catch (verifyError) {
-          console.warn('⚠️ SMTP verification failed (will still attempt to send):');
-          console.warn('   Error code:', verifyError.code);
-          console.warn('   Error message:', verifyError.message);
-        }
-      }
+      // Skip verification for Railway (causes timeout issues)
+      // Directly attempt to send email
       
       const info = await transporter.sendMail(mailOptions);
       console.log('✅ OTP Email sent successfully!');
@@ -206,17 +206,25 @@ export const sendOTPEmail = async (email, otpCode) => {
   console.error('   Command:', lastError.command);
   console.error('   Response:', lastError.response);
   console.error('   ResponseCode:', lastError.responseCode);
+  console.error('   Stack:', lastError.stack);
+  
+  // Log environment variables status (without exposing values)
+  console.error('📧 Email Configuration Status:');
+  console.error('   EMAIL_HOST:', process.env.EMAIL_HOST ? '✅ Set' : '❌ Missing');
+  console.error('   EMAIL_USER:', process.env.EMAIL_USER ? '✅ Set (' + process.env.EMAIL_USER + ')' : '❌ Missing');
+  console.error('   EMAIL_PASS:', process.env.EMAIL_PASS ? '✅ Set (length: ' + process.env.EMAIL_PASS.replace(/\s+/g, '').length + ')' : '❌ Missing');
+  console.error('   EMAIL_PORT:', process.env.EMAIL_PORT || '587 (default)');
   
   // Provide helpful error messages
   let userFriendlyMessage = 'Failed to send verification code. Please try again.';
-  if (lastError.code === 'EAUTH') {
-    userFriendlyMessage = 'Email authentication failed. Please check your email credentials.';
+  if (lastError.code === 'EAUTH' || lastError.responseCode === 535) {
+    userFriendlyMessage = 'Email authentication failed. Please verify your Gmail App Password is correct and has no spaces.';
   } else if (lastError.code === 'ECONNECTION' || lastError.code === 'ETIMEDOUT') {
-    userFriendlyMessage = 'Could not connect to email server. This may be due to network restrictions on Render free tier. Please try again in a few moments.';
-  } else if (lastError.responseCode === 535) {
-    userFriendlyMessage = 'Invalid email credentials. Please check your email password.';
+    userFriendlyMessage = 'Could not connect to email server. Please check your network connection and try again.';
   } else if (lastError.responseCode === 550) {
     userFriendlyMessage = 'Email address not found or access denied.';
+  } else if (lastError.message && lastError.message.includes('Invalid login')) {
+    userFriendlyMessage = 'Invalid email credentials. Please check your Gmail App Password in Railway environment variables.';
   }
   
   const enhancedError = new Error(userFriendlyMessage);

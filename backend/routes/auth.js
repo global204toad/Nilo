@@ -77,11 +77,16 @@ router.post('/send-otp', async (req, res) => {
       console.error('❌ Email sending error in auth route:');
       console.error('   Error code:', emailError.code);
       console.error('   Error message:', emailError.message);
+      console.error('   Response code:', emailError.responseCode);
       console.error('   Full error:', emailError);
+      console.error('   Original error:', emailError.originalError);
       await OTP.deleteOne({ _id: otp._id });
+      
+      // Return user-friendly error message
+      const errorMessage = emailError.message || 'Failed to send verification code. Please try again.';
       return res.status(500).json({
         success: false,
-        message: `Failed to send email: ${emailError.message || 'Please check your email configuration and try again.'}`
+        message: errorMessage
       });
     }
 
