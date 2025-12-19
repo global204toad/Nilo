@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import dotenv from 'dotenv';
 
 // Only load .env in development (Render uses environment variables)
@@ -9,6 +10,15 @@ if (process.env.NODE_ENV !== 'production') {
 // Check if using Resend (preferred for free hosting) or SMTP
 const USE_RESEND = !!process.env.EMAIL_API_KEY; // Resend API key
 const USE_SMTP = !USE_RESEND && process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS;
+
+// Initialize Resend client if API key is available
+let resendClient = null;
+if (USE_RESEND) {
+  resendClient = new Resend(process.env.EMAIL_API_KEY);
+  console.log('✅ Resend email service initialized');
+} else {
+  console.log('📧 Using SMTP email service');
+}
 
 // Create transporter
 const createTransporter = () => {
@@ -90,16 +100,18 @@ console.log('📧 Email transporter created (verification skipped on startup to 
 
 export const sendOTPEmail = async (email, otpCode) => {
   // Ensure EMAIL_USER is full email address
-  let fromEmail = process.env.EMAIL_USER || 'aliashrafosman777@gmail.com';
+  let fromEmail = process.env.EMAIL_USER || 'customerservice.nilo@gmail.com';
   if (!fromEmail.includes('@')) {
     fromEmail = `${fromEmail}@gmail.com`;
   }
   
-  const mailOptions = {
-    from: `NILO <${fromEmail}>`,
-    to: email,
-    subject: 'Your NILO Verification Code',
-    html: `
+  // Extract domain from email for Resend (must be verified domain or use onboarding@resend.dev)
+  const fromDomain = fromEmail.split('@')[1];
+  const resendFromEmail = fromDomain === 'gmail.com' || fromDomain === 'resend.dev' 
+    ? 'onboarding@resend.dev' 
+    : `noreply@${fromDomain}`;
+  
+  const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -149,34 +161,69 @@ export const sendOTPEmail = async (email, otpCode) => {
         </table>
       </body>
       </html>
-    `,
-    text: `
-      NILO Verification Code
+    `;
+  
+  const textContent = `
+    NILO Verification Code
 
-      Your verification code is: ${otpCode}
+    Your verification code is: ${otpCode}
 
-      This code will expire in 10 minutes.
+    This code will expire in 10 minutes.
 
-      If you didn't request this code, please ignore this email.
+    If you didn't request this code, please ignore this email.
 
-      © 2025 NILO. All rights reserved.
-    `
+    © 2025 NILO. All rights reserved.
+  `;
+
+  // Use Resend if API key is available, otherwise use SMTP
+  if (USE_RESEND && resendClient) {
+    try {
+      console.log(`📧 Sending OTP email via Resend to: ${email}`);
+      console.log(`📧 From: ${resendFromEmail}`);
+      
+      const { data, error } = await resendClient.emails.send({
+        from: `NILO <${resendFromEmail}>`,
+        to: email,
+        subject: 'Your NILO Verification Code',
+        html: htmlContent,
+        text: textContent,
+      });
+
+      if (error) {
+        console.error('❌ Resend error:', error);
+        throw new Error(error.message || 'Failed to send email via Resend');
+      }
+
+      console.log('✅ OTP Email sent successfully via Resend!');
+      console.log('   Message ID:', data?.id);
+      return { messageId: data?.id, response: 'Resend API' };
+    } catch (error) {
+      console.error('❌ Resend email sending failed:');
+      console.error('   Error:', error.message);
+      throw error;
+    }
+  }
+
+  // Fallback to SMTP
+  const mailOptions = {
+    from: `NILO <${fromEmail}>`,
+    to: email,
+    subject: 'Your NILO Verification Code',
+    html: htmlContent,
+    text: textContent
   };
 
-  // Retry logic for Render free tier (which can have connection issues)
+  // Retry logic for SMTP (which can have connection issues)
   const maxRetries = 3;
   let lastError;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`📧 Attempting to send OTP email to: ${email} (Attempt ${attempt}/${maxRetries})`);
+      console.log(`📧 Attempting to send OTP email via SMTP to: ${email} (Attempt ${attempt}/${maxRetries})`);
       console.log('📧 From:', mailOptions.from);
       
-      // Skip verification for Railway (causes timeout issues)
-      // Directly attempt to send email
-      
       const info = await transporter.sendMail(mailOptions);
-      console.log('✅ OTP Email sent successfully!');
+      console.log('✅ OTP Email sent successfully via SMTP!');
       console.log('   Message ID:', info.messageId);
       console.log('   Response:', info.response);
       return info;
@@ -210,6 +257,7 @@ export const sendOTPEmail = async (email, otpCode) => {
   
   // Log environment variables status (without exposing values)
   console.error('📧 Email Configuration Status:');
+  console.error('   EMAIL_API_KEY:', process.env.EMAIL_API_KEY ? '✅ Set (using Resend)' : '❌ Missing');
   console.error('   EMAIL_HOST:', process.env.EMAIL_HOST ? '✅ Set' : '❌ Missing');
   console.error('   EMAIL_USER:', process.env.EMAIL_USER ? '✅ Set (' + process.env.EMAIL_USER + ')' : '❌ Missing');
   console.error('   EMAIL_PASS:', process.env.EMAIL_PASS ? '✅ Set (length: ' + process.env.EMAIL_PASS.replace(/\s+/g, '').length + ')' : '❌ Missing');
@@ -234,15 +282,45 @@ export const sendOTPEmail = async (email, otpCode) => {
   throw enhancedError;
 };
 
+// Helper function to send email via Resend or SMTP
+const sendEmail = async ({ from, to, subject, html, text, replyTo }) => {
+  // Extract domain for Resend
+  const fromDomain = from.includes('@') ? from.split('@')[1].split('>')[0].trim() : 'gmail.com';
+  const resendFromEmail = fromDomain === 'gmail.com' || fromDomain === 'resend.dev' 
+    ? 'onboarding@resend.dev' 
+    : `noreply@${fromDomain}`;
+
+  // Use Resend if available
+  if (USE_RESEND && resendClient) {
+    try {
+      const emailData = {
+        from: from.includes('<') ? from : `NILO <${resendFromEmail}>`,
+        to,
+        subject,
+        html,
+        text
+      };
+      if (replyTo) emailData.replyTo = replyTo;
+
+      const { data, error } = await resendClient.emails.send(emailData);
+      if (error) throw new Error(error.message || 'Failed to send email via Resend');
+      return { messageId: data?.id, response: 'Resend API' };
+    } catch (error) {
+      console.error('❌ Resend email sending failed:', error.message);
+      throw error;
+    }
+  }
+
+  // Fallback to SMTP
+  const mailOptions = { from, to, subject, html, text };
+  if (replyTo) mailOptions.replyTo = replyTo;
+  return await transporter.sendMail(mailOptions);
+};
+
 export const sendContactEmail = async ({ customerName, customerEmail, subject, message }) => {
   const recipientEmail = 'customerservice.nilo@gmail.com';
   
-  const mailOptions = {
-    from: process.env.EMAIL_FROM || 'NILO Contact Form <noreply@nilo.com>',
-    to: recipientEmail,
-    replyTo: customerEmail,
-    subject: `NILO Contact Form: ${subject}`,
-    html: `
+  const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -287,27 +365,34 @@ export const sendContactEmail = async ({ customerName, customerEmail, subject, m
         </table>
       </body>
       </html>
-    `,
-    text: `
-      NILO Contact Form Submission
+    `;
+  
+  const textContent = `
+    NILO Contact Form Submission
 
-      Name: ${customerName}
-      Email: ${customerEmail}
-      Subject: ${subject}
+    Name: ${customerName}
+    Email: ${customerEmail}
+    Subject: ${subject}
 
-      Message:
-      ${message}
+    Message:
+    ${message}
 
-      © 2025 NILO. All rights reserved.
-    `
-  };
+    © 2025 NILO. All rights reserved.
+  `;
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Contact form email sent successfully:', info.messageId);
+    const info = await sendEmail({
+      from: process.env.EMAIL_FROM || 'NILO Contact Form <noreply@nilo.com>',
+      to: recipientEmail,
+      replyTo: customerEmail,
+      subject: `NILO Contact Form: ${subject}`,
+      html: htmlContent,
+      text: textContent
+    });
+    console.log('✅ Contact form email sent successfully:', info.messageId);
     return info;
   } catch (error) {
-    console.error('Error sending contact email:', error);
+    console.error('❌ Error sending contact email:', error);
     throw error;
   }
 };
@@ -337,16 +422,12 @@ export const sendOrderConfirmationEmail = async (order, customerEmail) => {
   }).join('');
 
   // Ensure EMAIL_USER is full email address for from field
-  let fromEmail = process.env.EMAIL_USER || 'aliashrafosman777@gmail.com';
+  let fromEmail = process.env.EMAIL_USER || 'customerservice.nilo@gmail.com';
   if (!fromEmail.includes('@')) {
     fromEmail = `${fromEmail}@gmail.com`;
   }
 
-  const mailOptions = {
-    from: `NILO <${fromEmail}>`,
-    to: customerEmail,
-    subject: `Order Confirmation - ${order.orderNumber}`,
-    html: `
+  const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -436,48 +517,54 @@ export const sendOrderConfirmationEmail = async (order, customerEmail) => {
         </table>
       </body>
       </html>
-    `,
-    text: `
-      Order Confirmation - ${order.orderNumber}
+    `;
+  
+  const textContent = `
+    Order Confirmation - ${order.orderNumber}
 
-      Thank you for your order! We've received your order and will begin processing it shortly.
+    Thank you for your order! We've received your order and will begin processing it shortly.
 
-      Order Number: ${order.orderNumber}
-      Order Date: ${new Date(order.createdAt).toLocaleDateString()}
+    Order Number: ${order.orderNumber}
+    Order Date: ${new Date(order.createdAt).toLocaleDateString()}
 
-      Shipping Information:
-      Name: ${order.shippingInfo.firstName} ${order.shippingInfo.lastName}
-      Email: ${order.shippingInfo.email}
-      Phone: ${order.shippingInfo.phone}
-      Address: ${order.shippingInfo.address}
-      City: ${order.shippingInfo.city}
-      ZIP Code: ${order.shippingInfo.zipCode}
-      Country: ${order.shippingInfo.country}
+    Shipping Information:
+    Name: ${order.shippingInfo.firstName} ${order.shippingInfo.lastName}
+    Email: ${order.shippingInfo.email}
+    Phone: ${order.shippingInfo.phone}
+    Address: ${order.shippingInfo.address}
+    City: ${order.shippingInfo.city}
+    ZIP Code: ${order.shippingInfo.zipCode}
+    Country: ${order.shippingInfo.country}
 
-      Order Items:
-      ${order.items.map(item => {
-        const product = item.productId;
-        return `${product?.name || 'Product'} - Quantity: ${item.quantity} - $${(item.price * item.quantity).toFixed(2)}`;
-      }).join('\n')}
+    Order Items:
+    ${order.items.map(item => {
+      const product = item.productId;
+      return `${product?.name || 'Product'} - Quantity: ${item.quantity} - $${(item.price * item.quantity).toFixed(2)}`;
+    }).join('\n')}
 
-      Subtotal: $${order.subtotal.toFixed(2)}
-      Shipping: ${order.shipping === 0 ? 'Free' : '$' + order.shipping.toFixed(2)}
-      Total: $${order.total.toFixed(2)}
+    Subtotal: $${order.subtotal.toFixed(2)}
+    Shipping: ${order.shipping === 0 ? 'Free' : '$' + order.shipping.toFixed(2)}
+    Total: $${order.total.toFixed(2)}
 
-      Payment Method: ${order.paymentMethod.replace('_', ' ')}
+    Payment Method: ${order.paymentMethod.replace('_', ' ')}
 
-      We'll send you another email when your order ships. If you have any questions, please contact us.
+    We'll send you another email when your order ships. If you have any questions, please contact us.
 
-      © 2025 NILO. All rights reserved.
-    `
-  };
+    © 2025 NILO. All rights reserved.
+  `;
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Order confirmation email sent successfully:', info.messageId);
+    const info = await sendEmail({
+      from: `NILO <${fromEmail}>`,
+      to: customerEmail,
+      subject: `Order Confirmation - ${order.orderNumber}`,
+      html: htmlContent,
+      text: textContent
+    });
+    console.log('✅ Order confirmation email sent successfully:', info.messageId);
     return info;
   } catch (error) {
-    console.error('Error sending order confirmation email:', error);
+    console.error('❌ Error sending order confirmation email:', error);
     throw error;
   }
 };
