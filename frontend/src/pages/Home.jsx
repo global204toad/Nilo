@@ -3,16 +3,16 @@ import { Link } from 'react-router-dom';
 export default function Home() {
   return (
     <div>
-      {/* Announcement Bar - Scrolling (Hidden on Mobile) */}
-      <div className="hidden md:block bg-gradient-to-r from-[#1a2820] via-[#243830] to-[#1a2820] text-white py-3 overflow-hidden relative">
+      {/* Announcement Bar - Scrolling */}
+      <div className="block bg-gradient-to-r from-[#1a2820] via-[#243830] to-[#1a2820] text-white py-2 md:py-3 overflow-hidden relative">
         <div className="flex whitespace-nowrap" style={{ animation: 'marquee 5s linear infinite' }}>
-          <span className="inline-block px-8 text-sm md:text-base font-medium">
+          <span className="inline-block px-4 md:px-8 text-xs md:text-sm lg:text-base font-medium">
             🎁 Free Shipping Over 2000 | ⭐ New Limited Edition | 💎 Save 20% on Every Product We Have
           </span>
-          <span className="inline-block px-8 text-sm md:text-base font-medium">
+          <span className="inline-block px-4 md:px-8 text-xs md:text-sm lg:text-base font-medium">
             🎁 Free Shipping Over 2000 | ⭐ New Limited Edition | 💎 Save 20% on Every Product We Have
           </span>
-          <span className="inline-block px-8 text-sm md:text-base font-medium">
+          <span className="inline-block px-4 md:px-8 text-xs md:text-sm lg:text-base font-medium">
             🎁 Free Shipping Over 2000 | ⭐ New Limited Edition | 💎 Save 20% on Every Product We Have
           </span>
         </div>
