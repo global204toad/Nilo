@@ -1,15 +1,30 @@
 import axios from 'axios';
 
-// SAFE: Get API URL from environment variable with defensive checks
-// This prevents white screen crashes if env is undefined
+// Get API URL from environment variable
+// Runtime validation: Fail fast if VITE_API_URL is missing in production
 const RAW_API_URL = import.meta.env?.VITE_API_URL;
+const IS_PRODUCTION = import.meta.env?.MODE === 'production';
+const IS_DEVELOPMENT = import.meta.env?.MODE === 'development';
+
+// Runtime validation: Throw error if API URL is missing in production
+if (IS_PRODUCTION && (!RAW_API_URL || typeof RAW_API_URL !== 'string' || RAW_API_URL.trim() === '')) {
+  const errorMessage = 'VITE_API_URL is not defined. Please configure it in the environment variables. Expected value: https://nilo-production.up.railway.app';
+  console.error('❌ CONFIGURATION ERROR:', errorMessage);
+  throw new Error(errorMessage);
+}
 
 // Normalize and validate API URL
 // The base URL should NOT include /api since we append /api/products, /api/auth, etc.
 const API_BASE_URL = (() => {
-  // If no env var, use localhost for development
-  if (!RAW_API_URL || typeof RAW_API_URL !== 'string' || RAW_API_URL.trim() === '') {
+  // In development, allow localhost fallback
+  if (IS_DEVELOPMENT && (!RAW_API_URL || typeof RAW_API_URL !== 'string' || RAW_API_URL.trim() === '')) {
+    console.warn('⚠️ Development mode: VITE_API_URL not set, using localhost fallback');
     return 'http://localhost:5000';
+  }
+  
+  // In production, we already validated above, so RAW_API_URL must exist
+  if (!RAW_API_URL || typeof RAW_API_URL !== 'string' || RAW_API_URL.trim() === '') {
+    throw new Error('VITE_API_URL is required but not set. Please configure it in the environment variables.');
   }
   
   // Normalize: remove trailing slashes and /api suffix
@@ -28,14 +43,7 @@ const API_BASE_URL = (() => {
 console.log('✅ API BASE URL:', API_BASE_URL);
 console.log('🌍 Environment:', import.meta.env?.MODE || 'unknown');
 console.log('📦 VITE_API_URL set:', !!RAW_API_URL);
-console.log('📦 VITE_API_URL value:', RAW_API_URL || 'Not set (using localhost fallback)');
-
-// Warn if using localhost in production
-if (!RAW_API_URL && import.meta.env?.MODE === 'production') {
-  console.error('⚠️ WARNING: VITE_API_URL is not set! Using localhost fallback which will not work in production.');
-  console.error('⚠️ Please set VITE_API_URL in Vercel environment variables.');
-  console.error('⚠️ Expected value: https://nilo-hxbc.onrender.com');
-}
+console.log('📦 VITE_API_URL value:', RAW_API_URL || (IS_DEVELOPMENT ? 'Not set (using localhost fallback)' : 'MISSING - CONFIGURATION ERROR'));
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -186,22 +194,20 @@ export const submitContactForm = async (formData) => {
 // Product API functions
 export const getProducts = async (params = {}) => {
   try {
-    // SAFE: Build full URL for debugging with defensive checks
-    const baseUrl = API_BASE_URL || 'http://localhost:5000';
+    // Build full URL for debugging
     const queryString = Object.keys(params).length > 0 ? '?' + new URLSearchParams(params).toString() : '';
-    const fullUrl = `${baseUrl}/api/products${queryString}`;
+    const fullUrl = `${API_BASE_URL}/api/products${queryString}`;
     
     console.log('🔍 Fetching products from:', fullUrl);
-    console.log('📋 API Base URL:', baseUrl);
-    console.log('🔧 VITE_API_URL:', RAW_API_URL || 'Not set (using fallback)');
+    console.log('📋 API Base URL:', API_BASE_URL);
+    console.log('🔧 VITE_API_URL:', RAW_API_URL || (IS_DEVELOPMENT ? 'Not set (using fallback)' : 'MISSING'));
     
     const response = await api.get('/api/products', { params });
     console.log('✅ Products fetched successfully:', response?.data?.length || 0, 'products');
     return response?.data || [];
   } catch (error) {
     console.error('❌ Get Products Error:', error);
-    const baseUrl = API_BASE_URL || 'http://localhost:5000';
-    console.error('🔍 Failed URL:', `${baseUrl}/api/products`);
+    console.error('🔍 Failed URL:', `${API_BASE_URL}/api/products`);
     console.error('📋 Error details:', {
       message: error?.message || 'Unknown error',
       code: error?.code,

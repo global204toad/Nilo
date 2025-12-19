@@ -134,7 +134,7 @@ export default function Products() {
                 </div>
                 {(!debugInfo.apiUrl || debugInfo.apiUrl.includes('localhost') || debugInfo.apiUrl === 'Not set (using localhost fallback)') && (
                   <p className="mt-2 text-yellow-700 font-semibold">
-                    ⚠️ The API URL is not configured correctly. Please set VITE_API_URL to: https://nilo-hxbc.onrender.com
+                    ⚠️ The API URL is not configured correctly. Please set VITE_API_URL to: https://nilo-production.up.railway.app
                   </p>
                 )}
               </div>
