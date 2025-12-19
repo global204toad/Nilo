@@ -6,6 +6,10 @@ if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
 }
 
+// Check if using Resend (preferred for free hosting) or SMTP
+const USE_RESEND = !!process.env.EMAIL_API_KEY; // Resend API key
+const USE_SMTP = !USE_RESEND && process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS;
+
 // Create transporter
 const createTransporter = () => {
   // Use SMTP configuration from .env
