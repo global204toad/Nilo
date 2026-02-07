@@ -37,12 +37,9 @@ export default function ProductDetail() {
     try {
       setAddingToCart(true);
       await addItem(id, quantity);
-      // Show success feedback
-      alert(`Added ${quantity} item(s) to cart!`);
       setQuantity(1);
     } catch (err) {
       console.error('Failed to add to cart:', err);
-      alert('Failed to add item to cart. Please try again.');
     } finally {
       setAddingToCart(false);
     }

@@ -179,7 +179,7 @@ export default function Products() {
         </div>
 
         {/* First Four Products - 4 Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 mb-12">
           {firstFour.map((watch) => (
             <ProductCard 
               key={watch._id || watch.id}
@@ -196,7 +196,7 @@ export default function Products() {
                 </div>
 
         {/* Second Two Products with Promotional Banner - 2 Products + 1 Banner */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 mb-12">
           {/* First Product */}
           {secondTwo[0] && (
             <ProductCard 
@@ -277,7 +277,7 @@ export default function Products() {
 
         {/* Remaining Products Before Last Two - 4 Columns */}
         {remainingBeforeLast.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 mb-12">
             {remainingBeforeLast.map((watch) => (
               <ProductCard 
                 key={watch._id || watch.id}
@@ -296,7 +296,7 @@ export default function Products() {
 
         {/* Last Two Products with Promotional Banner - 2 Products + 1 Banner */}
         {lastTwo.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 mb-12">
             {/* First Product */}
             {lastTwo[0] && (
               <ProductCard 

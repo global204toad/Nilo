@@ -31,8 +31,6 @@ export default function Cart() {
       await loadCart();
     } catch (error) {
       console.error('Failed to update quantity:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to update quantity. Please check if backend is running on port 5000.';
-      alert(`Error: ${errorMsg}`);
       // Reload cart to sync with server
       await loadCart();
     } finally {
@@ -56,8 +54,6 @@ export default function Cart() {
       await loadCart();
     } catch (error) {
       console.error('Failed to remove item:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Failed to remove item. Please check if backend is running on port 5000.';
-      alert(`Error: ${errorMsg}`);
       // Reload cart to sync with server
       await loadCart();
     } finally {
@@ -269,7 +265,7 @@ export default function Cart() {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm sticky top-20 md:top-24">
                 <h2 className="text-lg md:text-2xl font-bold text-[#2D2D2D] mb-4 md:mb-6">Order Summary</h2>
-                
+
                 <div className="space-y-4 mb-6">
                   <div className="flex justify-between text-[#6B7E6F]">
                     <span>Subtotal</span>

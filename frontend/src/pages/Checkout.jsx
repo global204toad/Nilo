@@ -94,7 +94,6 @@ export default function Checkout() {
       setOrderComplete(true);
     } catch (error) {
       console.error('Failed to place order:', error);
-      alert(`Failed to place order: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -164,9 +163,8 @@ export default function Checkout() {
           <div className="flex items-center justify-center gap-4 md:gap-8">
             {/* Step 1: Shipping */}
             <div className="flex items-center">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-colors ${
-                currentStep >= 1 ? 'bg-[#2D2D2D] text-white' : 'bg-[#E8E6E3] text-[#6B7E6F]'
-              }`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-colors ${currentStep >= 1 ? 'bg-[#2D2D2D] text-white' : 'bg-[#E8E6E3] text-[#6B7E6F]'
+                }`}>
                 {currentStep > 1 ? '✓' : '1'}
               </div>
               <span className={`ml-2 font-semibold ${currentStep >= 1 ? 'text-[#2D2D2D]' : 'text-[#6B7E6F]'}`}>
@@ -174,12 +172,11 @@ export default function Checkout() {
               </span>
             </div>
             <div className={`h-1 w-16 md:w-24 ${currentStep >= 2 ? 'bg-[#2D2D2D]' : 'bg-[#E8E6E3]'}`}></div>
-            
+
             {/* Step 2: Payment */}
             <div className="flex items-center">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-colors ${
-                currentStep >= 2 ? 'bg-[#2D2D2D] text-white' : 'bg-[#E8E6E3] text-[#6B7E6F]'
-              }`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-colors ${currentStep >= 2 ? 'bg-[#2D2D2D] text-white' : 'bg-[#E8E6E3] text-[#6B7E6F]'
+                }`}>
                 {currentStep > 2 ? '✓' : '2'}
               </div>
               <span className={`ml-2 font-semibold ${currentStep >= 2 ? 'text-[#2D2D2D]' : 'text-[#6B7E6F]'}`}>
@@ -187,12 +184,11 @@ export default function Checkout() {
               </span>
             </div>
             <div className={`h-1 w-16 md:w-24 ${currentStep >= 3 ? 'bg-[#2D2D2D]' : 'bg-[#E8E6E3]'}`}></div>
-            
+
             {/* Step 3: Complete */}
             <div className="flex items-center">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-colors ${
-                currentStep >= 3 ? 'bg-[#2D2D2D] text-white' : 'bg-[#E8E6E3] text-[#6B7E6F]'
-              }`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-colors ${currentStep >= 3 ? 'bg-[#2D2D2D] text-white' : 'bg-[#E8E6E3] text-[#6B7E6F]'
+                }`}>
                 3
               </div>
               <span className={`ml-2 font-semibold ${currentStep >= 3 ? 'text-[#2D2D2D]' : 'text-[#6B7E6F]'}`}>
@@ -216,7 +212,7 @@ export default function Checkout() {
                   className="bg-white rounded-lg p-4 md:p-8 shadow-sm"
                 >
                   <h2 className="text-xl md:text-3xl font-bold text-[#2D2D2D] mb-4 md:mb-6 leading-tight">Shipping Information</h2>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-semibold text-[#2D2D2D] mb-2">
@@ -226,9 +222,8 @@ export default function Checkout() {
                         type="text"
                         value={shippingInfo.firstName}
                         onChange={(e) => handleShippingInfoChange('firstName', e.target.value)}
-                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] ${
-                          errors.firstName ? 'border-red-500' : 'border-[#E8E6E3]'
-                        }`}
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] ${errors.firstName ? 'border-red-500' : 'border-[#E8E6E3]'
+                          }`}
                         placeholder="First Name"
                       />
                       {errors.firstName && (
@@ -244,9 +239,8 @@ export default function Checkout() {
                         type="text"
                         value={shippingInfo.lastName}
                         onChange={(e) => handleShippingInfoChange('lastName', e.target.value)}
-                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] ${
-                          errors.lastName ? 'border-red-500' : 'border-[#E8E6E3]'
-                        }`}
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] ${errors.lastName ? 'border-red-500' : 'border-[#E8E6E3]'
+                          }`}
                         placeholder="Last Name"
                       />
                       {errors.lastName && (
@@ -262,9 +256,8 @@ export default function Checkout() {
                         type="email"
                         value={shippingInfo.email}
                         onChange={(e) => handleShippingInfoChange('email', e.target.value)}
-                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] ${
-                          errors.email ? 'border-red-500' : 'border-[#E8E6E3]'
-                        }`}
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] ${errors.email ? 'border-red-500' : 'border-[#E8E6E3]'
+                          }`}
                         placeholder="your@email.com"
                       />
                       {errors.email && (
@@ -280,9 +273,8 @@ export default function Checkout() {
                         type="tel"
                         value={shippingInfo.phone}
                         onChange={(e) => handleShippingInfoChange('phone', e.target.value)}
-                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] ${
-                          errors.phone ? 'border-red-500' : 'border-[#E8E6E3]'
-                        }`}
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] ${errors.phone ? 'border-red-500' : 'border-[#E8E6E3]'
+                          }`}
                         placeholder="Phone Number"
                       />
                       {errors.phone && (
@@ -298,9 +290,8 @@ export default function Checkout() {
                         type="text"
                         value={shippingInfo.address}
                         onChange={(e) => handleShippingInfoChange('address', e.target.value)}
-                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] ${
-                          errors.address ? 'border-red-500' : 'border-[#E8E6E3]'
-                        }`}
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] ${errors.address ? 'border-red-500' : 'border-[#E8E6E3]'
+                          }`}
                         placeholder="Street Address"
                       />
                       {errors.address && (
@@ -315,9 +306,8 @@ export default function Checkout() {
                       <select
                         value={shippingInfo.city}
                         onChange={(e) => handleShippingInfoChange('city', e.target.value)}
-                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] bg-white ${
-                          errors.city ? 'border-red-500' : 'border-[#E8E6E3]'
-                        }`}
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] bg-white ${errors.city ? 'border-red-500' : 'border-[#E8E6E3]'
+                          }`}
                       >
                         <option value="">Select a city</option>
                         <option value="Cairo">Cairo</option>
@@ -371,9 +361,8 @@ export default function Checkout() {
                         type="text"
                         value={shippingInfo.zipCode}
                         onChange={(e) => handleShippingInfoChange('zipCode', e.target.value)}
-                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] ${
-                          errors.zipCode ? 'border-red-500' : 'border-[#E8E6E3]'
-                        }`}
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4F] ${errors.zipCode ? 'border-red-500' : 'border-[#E8E6E3]'
+                          }`}
                         placeholder="ZIP Code"
                       />
                       {errors.zipCode && (
@@ -407,7 +396,7 @@ export default function Checkout() {
                   className="bg-white rounded-lg p-8 shadow-sm"
                 >
                   <h2 className="text-3xl font-bold text-[#2D2D2D] mb-6">Payment Method</h2>
-                  
+
                   <div className="space-y-4">
                     <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:border-[#4A5D4F] transition-colors ${
                       paymentMethod === 'cash_on_delivery' ? 'border-[#2D2D2D] bg-[#F5F3EF]' : 'border-[#E8E6E3]'
@@ -442,7 +431,7 @@ export default function Checkout() {
                   className="bg-white rounded-lg p-8 shadow-sm"
                 >
                   <h2 className="text-3xl font-bold text-[#2D2D2D] mb-6">Review Your Order</h2>
-                  
+
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold text-[#2D2D2D] mb-4">Shipping Information</h3>
                     <div className="bg-[#F5F3EF] rounded-lg p-4">
@@ -518,7 +507,7 @@ export default function Checkout() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg p-6 shadow-sm sticky top-24">
               <h2 className="text-2xl font-bold text-[#2D2D2D] mb-6">Order Summary</h2>
-              
+
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between text-[#6B7E6F]">
                   <span>Subtotal</span>
