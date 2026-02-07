@@ -13,30 +13,30 @@ export default function Products() {
     window.scrollTo(0, 0);
     loadProducts();
   }, []);
-  
+
   const loadProducts = async () => {
     try {
       setLoading(true);
       setError(null);
       setDebugInfo(null);
-      
+
       // Log API configuration for debugging
       // SAFE: Guard against undefined env
       const apiUrl = import.meta.env?.VITE_API_URL || 'Not set (using localhost fallback)';
       console.log('🔄 Loading products...');
       console.log('🔗 VITE_API_URL:', apiUrl);
       console.log('🌍 Environment:', import.meta.env?.MODE || 'unknown');
-      
+
       // Fetch products filtered by men's watches
       const products = await getProducts({ category: 'watch', gender: 'men' });
       console.log('✅ Products loaded successfully:', products?.length || 0, 'products');
       setWatches(products);
     } catch (err) {
       console.error('❌ Failed to load products:', err);
-      
+
       // Better error messages for different error types
       let errorMessage = 'Failed to load products. Please try again.';
-      
+
       if (err.message) {
         if (err.message.includes('Network') || err.message.includes('timeout') || err.message.includes('connection') || err.code === 'ERR_NETWORK') {
           errorMessage = 'Unable to connect to server. Please check your internet connection and try again.';
@@ -54,7 +54,7 @@ export default function Products() {
           errorMessage = err.message;
         }
       }
-      
+
       // Always store debug info for display when there's an error
       // SAFE: Guard against undefined values
       const debugData = {
@@ -65,7 +65,7 @@ export default function Products() {
         statusText: err?.response?.statusText,
         fullUrl: err?.config ? `${err.config.baseURL || ''}${err.config.url || ''}` : 'Unknown'
       };
-      
+
       setError(errorMessage);
       setDebugInfo(debugData);
       // Fallback to empty array or default products if API fails
@@ -78,7 +78,7 @@ export default function Products() {
   // Filter: Only show men's watches for now
   // Future: This can be expanded to filter by category (watch, perfume, accessories, etc.)
   const filteredWatches = watches.filter(w => w.gender === 'men' && w.category === 'watch');
-  
+
   // Split watches into groups
   const firstFour = filteredWatches.slice(0, 4);
   const secondTwo = filteredWatches.slice(4, 6);
@@ -100,17 +100,17 @@ export default function Products() {
         <div className="max-w-md w-full">
           <div className="bg-white rounded-lg p-8 md:p-12 text-center shadow-lg">
             <div className="mb-6">
-              <svg 
-                className="mx-auto h-16 w-16 text-[#6B7E6F]" 
-                fill="none" 
-                viewBox="0 0 24 24" 
+              <svg
+                className="mx-auto h-16 w-16 text-[#6B7E6F]"
+                fill="none"
+                viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" 
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                 />
               </svg>
             </div>
@@ -156,7 +156,7 @@ export default function Products() {
   }
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-[#F5F3EF] pt-24 pb-16"
       style={{
         backgroundImage: 'url(/images/product-bg.jpg.jpg)',
@@ -167,7 +167,7 @@ export default function Products() {
       }}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-        
+
         {/* Page Header */}
         <div className="mb-12">
           <h1 className="text-5xl md:text-6xl font-bold text-[#2D2D2D] mb-4">
@@ -181,7 +181,7 @@ export default function Products() {
         {/* First Four Products - 4 Columns */}
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 mb-12">
           {firstFour.map((watch) => (
-            <ProductCard 
+            <ProductCard
               key={watch._id || watch.id}
               product={{
                 id: watch._id || watch.id,
@@ -193,13 +193,13 @@ export default function Products() {
               }}
             />
           ))}
-                </div>
+        </div>
 
         {/* Second Two Products with Promotional Banner - 2 Products + 1 Banner */}
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 mb-12">
           {/* First Product */}
           {secondTwo[0] && (
-            <ProductCard 
+            <ProductCard
               product={{
                 id: secondTwo[0]._id || secondTwo[0].id,
                 name: secondTwo[0].name,
@@ -210,10 +210,10 @@ export default function Products() {
               }}
             />
           )}
-          
+
           {/* Second Product */}
           {secondTwo[1] && (
-            <ProductCard 
+            <ProductCard
               product={{
                 id: secondTwo[1]._id || secondTwo[1].id,
                 name: secondTwo[1].name,
@@ -225,51 +225,85 @@ export default function Products() {
             />
           )}
 
-          {/* Promotional Banner - Spans 2 columns */}
-          <div className="relative overflow-visible cursor-pointer group lg:col-span-2">
-            {/* Content - Image Only, No Background */}
-            <div className="relative z-10 h-full flex items-center justify-center min-h-[200px] p-8">
-              {/* Rolex Watches Around Main Image - With Space from Main Image */}
-              {/* Watch 1 - Top Left */}
-              <img 
-                src="/images/rolx bg.png" 
-                alt="Rolex Watch"
-                className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
-                style={{ top: '8%', left: '8%', transform: 'rotate(-16deg)' }}
-              />
-              
-              {/* Watch 2 - Top Right */}
-              <img 
-                src="/images/rolx bg.png" 
-                alt="Rolex Watch"
-                className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
-                style={{ top: '8%', right: '8%', transform: 'rotate(16deg)' }}
-              />
-              
-              {/* Watch 3 - Bottom Left */}
-              <img 
-                src="/images/rolx bg.png" 
-                alt="Rolex Watch"
-                className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
-                style={{ bottom: '8%', left: '8%', transform: 'rotate(16deg)' }}
-              />
-              
-              {/* Watch 4 - Bottom Right */}
-              <img 
-                src="/images/rolx bg.png" 
-                alt="Rolex Watch"
-                className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
-                style={{ bottom: '8%', right: '8%', transform: 'rotate(-16deg)' }}
-              />
+          {/* Promotional Banner - Mobile Optimized Collage (9:16 friendly) */}
+          <div className="col-span-2 lg:col-span-2">
+            <div
+              className="relative cursor-pointer group rounded-2xl overflow-hidden mx-auto"
+              style={{
+                backgroundColor: '#FAF9F7',
+                maxWidth: '100%',
+                aspectRatio: '1/1',
+              }}
+            >
+              {/* Safe margin container - 10% padding on all sides */}
+              <div className="absolute inset-0 flex items-center justify-center p-[8%]">
+                {/* Collage container - centered */}
+                <div className="relative w-full h-full flex items-center justify-center">
 
-              {/* Main Image */}
-              <div className="flex items-center justify-center">
-                <img 
-                  src="/images/black and white rolx.jpeg" 
-                  alt="NILO Gift Guide"
-                  className="object-contain relative z-10"
-                  style={{ maxWidth: '66%', maxHeight: '66%', width: 'auto', height: 'auto' }}
-                />
+                  {/* Watch 1 - Top Left */}
+                  <img
+                    src="/images/rolx bg.png"
+                    alt="Rolex Watch"
+                    className="absolute w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain drop-shadow-lg group-hover:scale-105 transition-all duration-300"
+                    style={{
+                      top: '5%',
+                      left: '5%',
+                      transform: 'rotate(-15deg)',
+                      filter: 'contrast(1.1) brightness(1.02)'
+                    }}
+                  />
+
+                  {/* Watch 2 - Top Right */}
+                  <img
+                    src="/images/rolx bg.png"
+                    alt="Rolex Watch"
+                    className="absolute w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain drop-shadow-lg group-hover:scale-105 transition-all duration-300"
+                    style={{
+                      top: '5%',
+                      right: '5%',
+                      transform: 'rotate(15deg)',
+                      filter: 'contrast(1.1) brightness(1.02)'
+                    }}
+                  />
+
+                  {/* Watch 3 - Bottom Left */}
+                  <img
+                    src="/images/rolx bg.png"
+                    alt="Rolex Watch"
+                    className="absolute w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain drop-shadow-lg group-hover:scale-105 transition-all duration-300"
+                    style={{
+                      bottom: '5%',
+                      left: '5%',
+                      transform: 'rotate(15deg)',
+                      filter: 'contrast(1.1) brightness(1.02)'
+                    }}
+                  />
+
+                  {/* Watch 4 - Bottom Right */}
+                  <img
+                    src="/images/rolx bg.png"
+                    alt="Rolex Watch"
+                    className="absolute w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain drop-shadow-lg group-hover:scale-105 transition-all duration-300"
+                    style={{
+                      bottom: '5%',
+                      right: '5%',
+                      transform: 'rotate(-15deg)',
+                      filter: 'contrast(1.1) brightness(1.02)'
+                    }}
+                  />
+
+                  {/* Main Center Image */}
+                  <div className="relative z-10 flex items-center justify-center w-[55%] h-[55%]">
+                    <img
+                      src="/images/black and white rolx.jpeg"
+                      alt="NILO Gift Guide"
+                      className="w-full h-full object-contain drop-shadow-xl group-hover:scale-102 transition-all duration-300"
+                      style={{
+                        filter: 'contrast(1.05) brightness(1.02) saturate(1.1)'
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -279,7 +313,7 @@ export default function Products() {
         {remainingBeforeLast.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 mb-12">
             {remainingBeforeLast.map((watch) => (
-              <ProductCard 
+              <ProductCard
                 key={watch._id || watch.id}
                 product={{
                   id: watch._id || watch.id,
@@ -299,7 +333,7 @@ export default function Products() {
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 mb-12">
             {/* First Product */}
             {lastTwo[0] && (
-              <ProductCard 
+              <ProductCard
                 product={{
                   id: lastTwo[0]._id || lastTwo[0].id,
                   name: lastTwo[0].name,
@@ -310,10 +344,10 @@ export default function Products() {
                 }}
               />
             )}
-            
+
             {/* Second Product */}
             {lastTwo[1] && (
-              <ProductCard 
+              <ProductCard
                 product={{
                   id: lastTwo[1]._id || lastTwo[1].id,
                   name: lastTwo[1].name,
@@ -325,51 +359,85 @@ export default function Products() {
               />
             )}
 
-            {/* Promotional Banner - Spans 2 columns */}
-            <div className="relative overflow-visible cursor-pointer group lg:col-span-2">
-              {/* Content - Image Only, No Background */}
-              <div className="relative z-10 h-full flex items-center justify-center min-h-[200px] p-8">
-                {/* Rolex Watches Around Main Image - With Space from Main Image */}
-                {/* Watch 1 - Top Left */}
-                <img 
-                  src="/images/rolx bg.png" 
-                  alt="Rolex Watch"
-                  className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
-                  style={{ top: '8%', left: '8%', transform: 'rotate(-16deg)' }}
-                />
-                
-                {/* Watch 2 - Top Right */}
-                <img 
-                  src="/images/rolx bg.png" 
-                  alt="Rolex Watch"
-                  className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
-                  style={{ top: '8%', right: '8%', transform: 'rotate(16deg)' }}
-                />
-                
-                {/* Watch 3 - Bottom Left */}
-                <img 
-                  src="/images/rolx bg.png" 
-                  alt="Rolex Watch"
-                  className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
-                  style={{ bottom: '8%', left: '8%', transform: 'rotate(16deg)' }}
-                />
-                
-                {/* Watch 4 - Bottom Right */}
-                <img 
-                  src="/images/rolx bg.png" 
-                  alt="Rolex Watch"
-                  className="absolute w-20 h-20 md:w-24 md:h-24 object-contain grayscale group-hover:grayscale-0 transition-all duration-300 z-20"
-                  style={{ bottom: '8%', right: '8%', transform: 'rotate(-16deg)' }}
-                />
+            {/* Promotional Banner - Mobile Optimized Collage (9:16 friendly) */}
+            <div className="col-span-2 lg:col-span-2">
+              <div
+                className="relative cursor-pointer group rounded-2xl overflow-hidden mx-auto"
+                style={{
+                  backgroundColor: '#FAF9F7',
+                  maxWidth: '100%',
+                  aspectRatio: '1/1',
+                }}
+              >
+                {/* Safe margin container - 10% padding on all sides */}
+                <div className="absolute inset-0 flex items-center justify-center p-[8%]">
+                  {/* Collage container - centered */}
+                  <div className="relative w-full h-full flex items-center justify-center">
 
-                {/* Main Image */}
-                <div className="flex items-center justify-center">
-                  <img 
-                    src="/images/black and white rolx.jpeg" 
-                    alt="NILO Gift Guide"
-                    className="object-contain relative z-10"
-                    style={{ maxWidth: '66%', maxHeight: '66%', width: 'auto', height: 'auto' }}
-                  />
+                    {/* Watch 1 - Top Left */}
+                    <img
+                      src="/images/rolx bg.png"
+                      alt="Rolex Watch"
+                      className="absolute w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain drop-shadow-lg group-hover:scale-105 transition-all duration-300"
+                      style={{
+                        top: '5%',
+                        left: '5%',
+                        transform: 'rotate(-15deg)',
+                        filter: 'contrast(1.1) brightness(1.02)'
+                      }}
+                    />
+
+                    {/* Watch 2 - Top Right */}
+                    <img
+                      src="/images/rolx bg.png"
+                      alt="Rolex Watch"
+                      className="absolute w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain drop-shadow-lg group-hover:scale-105 transition-all duration-300"
+                      style={{
+                        top: '5%',
+                        right: '5%',
+                        transform: 'rotate(15deg)',
+                        filter: 'contrast(1.1) brightness(1.02)'
+                      }}
+                    />
+
+                    {/* Watch 3 - Bottom Left */}
+                    <img
+                      src="/images/rolx bg.png"
+                      alt="Rolex Watch"
+                      className="absolute w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain drop-shadow-lg group-hover:scale-105 transition-all duration-300"
+                      style={{
+                        bottom: '5%',
+                        left: '5%',
+                        transform: 'rotate(15deg)',
+                        filter: 'contrast(1.1) brightness(1.02)'
+                      }}
+                    />
+
+                    {/* Watch 4 - Bottom Right */}
+                    <img
+                      src="/images/rolx bg.png"
+                      alt="Rolex Watch"
+                      className="absolute w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain drop-shadow-lg group-hover:scale-105 transition-all duration-300"
+                      style={{
+                        bottom: '5%',
+                        right: '5%',
+                        transform: 'rotate(-15deg)',
+                        filter: 'contrast(1.1) brightness(1.02)'
+                      }}
+                    />
+
+                    {/* Main Center Image */}
+                    <div className="relative z-10 flex items-center justify-center w-[55%] h-[55%]">
+                      <img
+                        src="/images/black and white rolx.jpeg"
+                        alt="NILO Gift Guide"
+                        className="w-full h-full object-contain drop-shadow-xl group-hover:scale-102 transition-all duration-300"
+                        style={{
+                          filter: 'contrast(1.05) brightness(1.02) saturate(1.1)'
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
