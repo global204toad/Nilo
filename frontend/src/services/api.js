@@ -21,21 +21,21 @@ const API_BASE_URL = (() => {
     console.warn('⚠️ Development mode: VITE_API_URL not set, using localhost fallback');
     return 'http://localhost:5000';
   }
-  
+
   // In production, we already validated above, so RAW_API_URL must exist
   if (!RAW_API_URL || typeof RAW_API_URL !== 'string' || RAW_API_URL.trim() === '') {
     throw new Error('VITE_API_URL is required but not set. Please configure it in the environment variables.');
   }
-  
+
   // Normalize: remove trailing slashes and /api suffix
   let url = RAW_API_URL.trim().replace(/\/+$/, ''); // Remove trailing slashes
-  
+
   // Remove /api suffix if present (prevents double /api/api/products)
   if (url.endsWith('/api')) {
     console.warn('⚠️ WARNING: VITE_API_URL ends with /api. Auto-removing to prevent double /api in requests.');
     url = url.replace(/\/api$/, '');
   }
-  
+
   return url;
 })();
 
@@ -47,7 +47,7 @@ console.log('📦 VITE_API_URL value:', RAW_API_URL || (IS_DEVELOPMENT ? 'Not se
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000, // 15 second timeout for mobile networks
+  timeout: 30000, // 30 second timeout for Render cold starts
   headers: {
     'Content-Type': 'application/json',
   },
@@ -103,6 +103,43 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Retry utility with exponential backoff for Render cold starts
+const retryWithBackoff = async (fn, options = {}) => {
+  const {
+    maxRetries = 3,
+    baseDelay = 2000, // 2 seconds
+    shouldRetry = (error) => {
+      // Retry on timeout or network errors (common with Render cold starts)
+      return error.code === 'ECONNABORTED' ||
+        error.code === 'ERR_NETWORK' ||
+        error.message?.includes('Network Error') ||
+        error.message?.includes('timeout');
+    },
+    onRetry = () => { },
+  } = options;
+
+  let lastError;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      if (attempt < maxRetries && shouldRetry(error)) {
+        const delay = baseDelay * Math.pow(2, attempt); // 2s, 4s, 8s
+        console.log(`🔄 Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms...`);
+        onRetry(attempt + 1, maxRetries, delay);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError;
+};
 
 export const hello = async () => {
   try {
@@ -192,40 +229,27 @@ export const submitContactForm = async (formData) => {
 };
 
 // Product API functions
-export const getProducts = async (params = {}) => {
-  try {
+export const getProducts = async (params = {}, retryOptions = {}) => {
+  return retryWithBackoff(async () => {
     // Build full URL for debugging
     const queryString = Object.keys(params).length > 0 ? '?' + new URLSearchParams(params).toString() : '';
     const fullUrl = `${API_BASE_URL}/api/products${queryString}`;
-    
+
     console.log('🔍 Fetching products from:', fullUrl);
     console.log('📋 API Base URL:', API_BASE_URL);
     console.log('🔧 VITE_API_URL:', RAW_API_URL || (IS_DEVELOPMENT ? 'Not set (using fallback)' : 'MISSING'));
-    
+
     const response = await api.get('/api/products', { params });
     console.log('✅ Products fetched successfully:', response?.data?.length || 0, 'products');
     return response?.data || [];
-  } catch (error) {
-    console.error('❌ Get Products Error:', error);
-    console.error('🔍 Failed URL:', `${API_BASE_URL}/api/products`);
-    console.error('📋 Error details:', {
-      message: error?.message || 'Unknown error',
-      code: error?.code,
-      status: error?.response?.status,
-      statusText: error?.response?.statusText,
-    });
-    throw error;
-  }
+  }, retryOptions);
 };
 
-export const getProduct = async (id) => {
-  try {
+export const getProduct = async (id, retryOptions = {}) => {
+  return retryWithBackoff(async () => {
     const response = await api.get(`/api/products/${id}`);
     return response.data;
-  } catch (error) {
-    console.error('Get Product Error:', error);
-    throw error;
-  }
+  }, retryOptions);
 };
 
 // Cart API functions

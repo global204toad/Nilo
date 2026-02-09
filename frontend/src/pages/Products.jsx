@@ -89,7 +89,11 @@ export default function Products() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F3EF] pt-24 pb-16 flex items-center justify-center">
-        <div className="text-2xl text-[#2D2D2D]">Loading products...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2D2D2D] mx-auto mb-4"></div>
+          <div className="text-xl text-[#2D2D2D] mb-2">Loading products...</div>
+          <div className="text-sm text-[#6B7E6F]">Server may take a moment to wake up</div>
+        </div>
       </div>
     );
   }
